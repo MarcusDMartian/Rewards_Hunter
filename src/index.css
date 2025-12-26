@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Glassmorphism utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 dark:border-slate-700/50;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-slate-700/50;
+  }
+  
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl border border-white/30 dark:border-slate-700/50 shadow-lg;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent;
+  }
+  
+  .gradient-border {
+    @apply border-2 border-transparent bg-clip-padding;
+    background-image: linear-gradient(white, white), linear-gradient(to right, #6366f1, #a855f7, #ec4899);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+}
+
+/* Animation classes */
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Liquid background blobs */
+.blob {
+  border-radius: 50%;
+  filter: blur(40px);
+  mix-blend-mode: multiply;
+}
+
+.dark .blob {
+  mix-blend-mode: screen;
+  opacity: 0.3;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

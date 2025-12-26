@@ -1,0 +1,908 @@
+Reward Hunter – Internal Reward & Feedback Platform (Kaizen – Loyalty – Gamification)
+Ứng dụng nội bộ được thiết kế như một "Kaizen – Loyalty & Gamification Hub" cho nhân viên: nơi mọi người đề xuất cải tiến, ghi nhận lẫn nhau, nhận điểm/thưởng và tham gia các "mini game" thành tích, tất cả đều bám vào văn hoá cải tiến liên tục.
+
+===============================================================================
+PHẦN A: VISION & PRODUCT OVERVIEW
+===============================================================================
+
+1. Văn hoá Kaizen & bài toán sản phẩm
+1.1. Kaizen – continuous improvement
+Kaizen là triết lý cải tiến liên tục với trọng tâm là các thay đổi nhỏ, đều đặn, tích luỹ thành cải thiện lớn về chất lượng, chi phí và hiệu quả.
+Nguyên tắc cốt lõi: cải tiến liên tục, trao quyền cho nhân viên, tham gia của mọi cấp bậc, tư duy dài hạn và tạo giá trị cho khách hàng thay vì tối ưu ngắn hạn.
+
+1.2. Insight sản phẩm từ Kaizen
+Cần cơ chế để mọi nhân viên dễ dàng ghi nhận vấn đề, đề xuất ý tưởng, tham gia cải tiến hàng ngày, thay vì những chiến dịch lớn hiếm hoi.
+Hệ thống thưởng – công nhận – feedback ẩn danh kết hợp gamification (điểm, badge, leaderboard) giúp duy trì động lực và văn hoá cải tiến liên tục.
+
+2. Khái niệm sản phẩm & use case chính
+2.1. Tổng quan sản phẩm
+Tên gợi ý: Reward Hunter – Internal Reward & Feedback Platform
+Mục tiêu:
+- Xây dựng văn hoá Kaizen: cải tiến liên tục, mọi người cùng tham gia.
+- Tăng mức độ gắn kết và công nhận giữa các nhân viên.
+- Cung cấp kênh feedback ẩn danh an toàn để cải thiện đội ngũ, lãnh đạo và tổ chức.
+- Tạo một hệ sinh thái "loyalty nội bộ" với điểm, cấp độ, badge, quà tặng.
+
+2.2. Nhóm user chính
+Member (nhân viên):
+- Gửi đề xuất cải tiến (Kaizen Idea).
+- Ghi nhận đồng đội (Kudos).
+- Gửi feedback ẩn danh.
+- Nhận điểm, badge, đổi quà.
+
+Leader/Manager:
+- Duyệt đề xuất Kaizen.
+- Review và xử lý yêu cầu đổi quà trong phạm vi team (nếu được phân quyền).
+- Xem dashboard đóng góp đội nhóm.
+- Gửi announcement, khuyến khích hành vi Kaizen.
+
+Admin/HR:
+- Cấu hình chương trình thưởng, rule gamification.
+- Quản lý danh mục phần thưởng, tồn kho quà.
+- Quản lý user, team/đơn vị.
+- Xem báo cáo toàn công ty, xuất dữ liệu.
+
+Superadmin (Org Owner):
+- Quản lý toàn bộ tổ chức của mình.
+- Duyệt/từ chối yêu cầu tham gia tổ chức (Join Requests).
+- Quản lý users, missions, rewards, badges trong tổ chức.
+- Truy cập Management Dashboard.
+
+System Admin (Platform-level):
+- Quản lý toàn bộ platform (không gắn với org cụ thể).
+- Truy cập Console (/console) để quản lý nhiều organizations.
+- Xem thống kê toàn hệ thống.
+
+
+2.3. Use case lõi
+Peer-to-peer recognition (Kudos):
+- Nhân viên tặng "Kudos" cho nhau, gắn với giá trị cốt lõi (Kaizen, Collaboration, Ownership…).
+- Nội dung kudos hiển thị trên "Wow Wall" tạo hiệu ứng lan toả tích cực.
+
+Kaizen Idea Management:
+- Mọi người tạo ticket cải tiến (vấn đề – đề xuất – tác động).
+- Leader/Committee review, approve, mark implemented.
+- Có cơ chế bình chọn, follow, comment.
+
+Anonymous Feedback:
+- Nhân viên gửi feedback ẩn danh cho: đồng nghiệp, leader, team, hoặc toàn công ty.
+- Có template gợi ý (Start/Stop/Continue, NPS, 4L…).
+
+Loyalty & Gamification:
+- Hệ thống nhiệm vụ (missions), level, badge, leaderboard.
+- Streak ngày/tuần gắn với hành vi tốt (ví dụ: gửi ít nhất 1 Kaizen/tuần).
+
+Rewards & Redemption:
+- Nhân viên tích điểm từ các hành vi tích cực.
+- Đổi điểm lấy voucher, day-off, quà nội bộ…
+- Quy trình yêu cầu – phê duyệt – fulfill.
+
+===============================================================================
+PHẦN B: FRONTEND IMPLEMENTATION (HIỆN TẠI)
+===============================================================================
+
+3. Mô tả giao diện (mobile responsive)
+3.1. Nguyên tắc UX/UI & layout
+Mobile-first, responsive:
+Breakpoints:
+- Mobile: 360–414px
+- Tablet: 768px (md breakpoint)
+- Desktop: 1280px+
+
+Navigation:
+- Mobile: bottom navigation floating 5 tab (Home, Kaizen, ➕ Create, Kudos, Profile) với nút "+" ở giữa để tạo Kaizen mới.
+- Web: top floating navigation bar (logo, nav links, notifications, profile) với glassmorphism design.
+
+Thiết kế Visual:
+- Liquid/Gradient Background với các blob animation.
+- Glassmorphism cards (backdrop-blur, white/60 opacity, border).
+- Tailwind CSS với custom animations.
+
+3.2. Cấu trúc Routes hiện tại
+Routes đã triển khai:
+- / – Home/Dashboard (Member)
+- /ideas – Kaizen Ideas list + create form
+- /ideas/:id – Idea Detail page với voting, comments, follow
+- /kudos – Send Kudos + Kudos Feed ("Wow Wall")
+- /leaderboard – Bảng xếp hạng (theo tháng/quý/tất cả)
+- /badges – Badge Collection (hiển thị badges đã unlock/chưa unlock)
+- /rewards – Catalog & Wallet + Transaction history + Redemption history
+- /profile – Profile & Settings + Navigation menu
+- /feedback – Anonymous Feedback form với complete templates
+- /settings – Settings page với Dark Mode, Language, Data Reset
+- /onboarding – Onboarding flow (4 slides) cho first-time users
+
+3.3. Chi tiết từng page hiện tại
+
+3.3.0. Login & Registration (Multi-tenant)
+- **Multi-step Flow**:
+  - Step 1: User enters email. System checks domain (e.g., `@company.com`).
+  - Step 2a (New Domain): User prompted to "setup Organization" (becomes Superadmin).
+  - Step 2b (Existing Domain): User prompted to "Join Request".
+  - Step 2c (Invited/Normal): Standard password login.
+- **UI Elements**:
+  - Domain status badges (Green: Found, Blue: New).
+  - Dynamic form fields based on registration type.
+
+3.3.1. Dashboard (/)
+Layout:
+- Welcome section với greeting và streak indicator (Day Streak với fire icon).
+- Quote/tagline: "The war for improvement never ends. Ready to deploy?"
+
+Stats Cards (horizontal scroll trên mobile):
+- Main Stats Card: Hiển thị total XP, current level, progress bar đến level tiếp theo, PieChart animation.
+- Badges Preview Card: Hiển thị 3 badges đã earn, nút "View All" link đến /badges.
+- Impact Card (War Stats): Hiển thị số tactics và honor.
+
+Daily Operations (Missions):
+- Gradient glass card với danh sách missions.
+- Mỗi mission hiển thị: title, progress bar, trạng thái (completed/claimable/pending).
+- Nút "Claim +X XP" cho missions đã hoàn thành nhưng chưa claim, với animation pulse.
+- Sau khi claim, hiển thị "Collected" với checkmark.
+
+Field Activity Feed:
+- Hiển thị 3 Kaizen ideas gần nhất.
+- Card social dạng: avatar + tên + action + idea title + impact type + thời gian.
+
+3.3.2. Kaizen Ideas (/ideas)
+Tab Switcher:
+- "Browse Ideas" – xem danh sách ideas
+- "Submit New" – form tạo idea mới
+
+Browse Ideas View:
+- Filter buttons (Latest, Top Voted, Implemented, My Team) – horizontal scroll.
+- Mỗi idea card hiển thị:
+  - Icon theo impact type (Speed = blue, Quality = emerald).
+  - Title + Status badge (màu: Implemented = green, In Review = yellow, New = gray).
+  - Problem section (gray box) + Proposal section (indigo box).
+  - Author avatar + tên + thời gian.
+  - Vote count với up arrow.
+  - Comment button.
+
+Submit New View (Create Idea Form):
+- Title input (bắt buộc).
+- Impact Type select: Cost Saving, Quality Improvement, Speed/Efficiency, Safety.
+- Problem textarea với "AI Polish" button – gọi Gemini API để cải tiến văn bản.
+- Solution textarea với "AI Polish" button.
+- Submit button: "Submit Idea (+50 pts)".
+
+AI Integration:
+- Sử dụng Gemini API (geminiService.ts) để polish văn bản.
+- Prompt cho Kaizen: rewrite problem/proposal description, professional, clear, under 50 words.
+
+3.3.3. Kudos (/kudos)
+Tab Switcher (mobile only):
+- "Wow Wall" – xem kudos feed
+- "Send Kudos" – form gửi kudos
+
+Send Kudos Form:
+- "Who to?" – selector chọn người nhận (UI placeholder).
+- Core Value buttons: Kaizen, Collaboration, Ownership, Customer.
+- Message textarea với "AI Polish" button (Sparkles icon).
+- "Send Kudos" button.
+
+Wow Wall Feed:
+- Header với filter: Global/My Team.
+- Mỗi kudos card hiển thị:
+  - Sender avatar → Receiver avatar (với connecting line).
+  - Core Value tag (rose color).
+  - Message trong quotes.
+  - Footer: sender → receiver names + heart/like button với count.
+
+AI Integration:
+- Gemini API polish message: warm, encouraging, enthusiastic, under 40 words.
+
+3.3.4. Anonymous Feedback (/feedback)
+Header:
+- ShieldCheck icon + title "Anonymous Feedback".
+- Message: "Your voice matters. Help us improve without revealing your identity."
+
+Privacy Notice:
+- Blue info box: "Your identity is hidden. This feedback is encrypted and only aggregated data is shown to leadership."
+
+Form:
+- "Who is this feedback for?" select: Company General, My Direct Manager, HR Team.
+- Template selector buttons: Start/Stop, NPS, Open.
+
+NPS Template:
+- 1-10 scale buttons.
+- Scale labels: "Not Likely" ↔ "Very Likely".
+
+Comments textarea.
+Submit button: "Submit Anonymously" với Send icon.
+
+3.3.5. Rewards (/rewards)
+Wallet Header:
+- Gradient dark (slate-900 → slate-800).
+- Current balance: "[POINTS] pts" với Wallet icon.
+- "How to earn?" button.
+
+Reward Catalog:
+- Grid 4 columns (responsive: 1/2/4).
+- Mỗi reward card:
+  - Image với hover scale effect.
+  - "Low Stock" badge nếu stock < 10.
+  - Type tag (Voucher, DayOff, Merch).
+  - Name + Points cost.
+  - Redeem button (disabled nếu không đủ điểm).
+
+Transaction History:
+- Danh sách transactions.
+- Mỗi transaction: icon (earn = green arrow down-left, spend = gray arrow up-right), description, date, amount (+/- prefix).
+
+3.3.6. Leaderboard (/leaderboard)
+Header:
+- Indigo gradient với Trophy icon.
+- Title: "Hall of Fame".
+- Subtitle: "Recognizing our top contributors and continuous improvers."
+
+Controls:
+- Period toggles: This Month, This Quarter, All Time.
+- Sorting thay đổi theo period: monthlyPoints/quarterlyPoints/points.
+
+Leaderboard Table:
+- Team filter dropdown (All Teams + dynamic teams from users).
+- User rows với:
+  - Rank icon (Crown gold cho #1, Medal silver cho #2, Medal bronze cho #3, số thứ tự cho còn lại).
+  - Avatar với Trophy icon cho #1.
+  - Name + "YOU" badge nếu là current user.
+  - Team name + Level badge.
+  - Badges preview (3 badges, desktop only).
+  - Points hiển thị.
+- Current user row có highlight border indigo.
+
+3.3.7. Badges (/badges)
+Header:
+- Gradient violet → indigo.
+- Award icon + title "Badge Collection".
+- Description: "Collect badges by contributing ideas, recognizing peers, and maintaining consistency."
+- Progress bar: Total Unlocked [X] / [Total].
+
+Badges Grid:
+- 4 columns (responsive: 1/2/3/4).
+- Mỗi badge card:
+  - Icon trong box với background color.
+  - Badge name + description.
+  - Status tag: "Unlocked" (green) hoặc "Locked" (gray với Lock icon).
+  - Unlocked badges: full color, hover scale effect.
+  - Locked badges: grayscale, opacity-70, lock icon góc phải.
+
+Available Badges:
+- Early Bird 🌅 – Complete a mission before 9 AM.
+- Idea Machine 💡 – Submit 5 Kaizen ideas.
+- Kudos Star ⭐ – Receive 10 Kudos from colleagues.
+- Top Performer 🏆 – Reach top 3 on the monthly leaderboard.
+- Bug Hunter 🐞 – Report or fix 5 technical issues.
+- Team Player 🤝 – Send 20 Kudos to your teammates.
+- Streak Master 🔥 – Maintain a 30-day activity streak.
+- Innovator 🚀 – Have 3 ideas implemented.
+
+3.3.8. Profile (/profile)
+User Header:
+- Cover gradient (indigo → purple).
+- Avatar với Settings button.
+- Name, role, team.
+- Level badge.
+
+Level Progress:
+- Next Milestone section.
+- Current XP / Next Level XP.
+- Progress bar với gradient.
+- XP needed text.
+
+Stats Grid:
+- Total XP.
+- Day Streak.
+
+Active Missions:
+- Hiển thị 3 missions với progress bars.
+- Link "View Dashboard".
+
+Badge Collection:
+- Grid badges đã unlock.
+- "See All" link → /badges
+- "View All" placeholder nếu có nhiều hơn.
+
+Dossier Access (Navigation Menu):
+- Tactics → /ideas (Lightbulb, blue).
+- Honor → /kudos (Heart, rose).
+- Rankings → /leaderboard (Trophy, yellow).
+- Loot → /rewards (Gift, emerald).
+- Intel Report → /feedback (ShieldCheck, slate).
+
+Logout Button:
+- "Abort Mission (Sign Out)" với LogOut icon, red hover.
+
+3.4. Components hiện tại
+3.4.1. Layout.tsx
+- Liquid background với animated blobs (purple, blue, pink).
+- Desktop: Floating top navigation bar với glassmorphism.
+- Mobile: 
+  - Sticky top header với logo + notifications + profile avatar.
+  - Floating bottom navigation với elevated "+" button ở giữa.
+
+Navigation Items:
+- Home, Kaizen (Ideas), Kudos, Leaderboard, Badges, Rewards, Profile.
+
+3.4.2. Leaderboard.tsx (Component)
+- Props: users, sortBy, limit, showTeamFilter.
+- Dynamic team filter từ users data.
+- Rank icons: Crown, Medal (silver/bronze), số thứ tự.
+- Current user highlighting.
+- Responsive badges display.
+
+3.5. Services hiện tại
+3.5.1. geminiService.ts
+- Sử dụng @google/genai SDK.
+- Model: gemini-3-flash-preview.
+- Function: generateRefinedText(draft, type: 'kaizen' | 'kudos').
+- Kaizen prompt: professional, clear, focused on impact, under 50 words.
+- Kudos prompt: warm, encouraging, enthusiastic, under 40 words.
+- Error handling: fallback về text gốc nếu API fail.
+
+3.6. Superadmin Console
+- **Member Requests**: Tab quản lý các yêu cầu gia nhập (Join Requests) từ domain của tổ chức.
+  - Approve: Tạo user account, link tới Org.
+  - Reject: Từ chối yêu cầu.
+
+4. Data Models (Types) hiện tại
+
+4.1. User
+{
+  id: string;
+  name: string;
+  avatar: string;
+  role: 'Member' | 'Leader' | 'Admin';
+  team: string;
+  points: number;
+  monthlyPoints: number;
+  quarterlyPoints: number;
+  level: number;
+  nextLevelPoints: number;
+  streak: number;
+  badges: Badge[];
+}
+
+4.2. Badge
+{
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+}
+
+4.3. Mission
+{
+  id: string;
+  title: string;
+  progress: number;
+  total: number;
+  reward: number;
+  completed: boolean;
+  claimed: boolean;
+  type: 'daily' | 'weekly';
+}
+
+4.4. KaizenIdea
+{
+  id: string;
+  title: string;
+  problem: string;
+  proposal: string;
+  impact: 'Cost' | 'Quality' | 'Speed' | 'Safety';
+  status: 'New' | 'In Review' | 'Approved' | 'Implemented';
+  votes: number;
+  author: User;
+  createdAt: string;
+}
+
+4.5. Kudos
+{
+  id: string;
+  sender: User;
+  receiver: User;
+  coreValue: 'Kaizen' | 'Collaboration' | 'Ownership' | 'Customer First';
+  message: string;
+  createdAt: string;
+  likes: number;
+}
+
+4.6. Reward
+{
+  id: string;
+  name: string;
+  image: string;
+  cost: number;
+  type: 'Voucher' | 'DayOff' | 'Merch';
+  stock: number;
+}
+
+4.7. PointTransaction
+{
+  id: string;
+  description: string;
+  amount: number;
+  type: 'earn' | 'spend';
+  date: string;
+}
+
+4.8. Organization
+{
+  id: string;
+  name: string;
+  domain: string;
+  createdAt: string;
+}
+
+4.9. JoinRequest
+{
+  id: string;
+  email: string;
+  name: string;
+  orgId: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
+5. Tech Stack hiện tại
+5.1. Frontend
+- Framework: React 18 + TypeScript.
+- Build Tool: Vite.
+- Routing: react-router-dom (HashRouter).
+- Styling: Tailwind CSS với custom animations.
+- Charts: recharts (PieChart).
+- Icons: lucide-react.
+- AI: @google/genai (Gemini API).
+
+5.2. Project Structure
+/
+├── App.tsx              # Main router với ThemeProvider
+├── index.tsx            # Entry point
+├── index.html           # HTML template với dark mode support
+├── types.ts             # TypeScript interfaces (Comment, RedemptionRequest, etc.)
+├── constants.ts         # Mock data
+├── components/
+│   ├── Layout.tsx       # Main layout với navigation & dark mode
+│   ├── Leaderboard.tsx  # Reusable leaderboard component
+│   ├── UserSelectModal.tsx  # Modal search/select user
+│   └── RedeemModal.tsx  # Reward redemption confirmation
+├── contexts/
+│   └── ThemeContext.tsx # Dark mode context provider
+├── services/
+│   ├── geminiService.ts # Gemini AI integration
+│   └── storageService.ts # LocalStorage data persistence
+├── pages/
+│   ├── Dashboard.tsx    # Home page
+│   ├── KaizenIdeas.tsx  # Ideas list + create
+│   ├── Kudos.tsx        # Kudos feed + send
+│   ├── Feedback.tsx     # Anonymous feedback
+│   ├── Rewards.tsx      # Reward catalog + wallet
+│   ├── Leaderboard.tsx  # Leaderboard page
+│   ├── Badges.tsx       # Badge collection
+│   └── Profile.tsx      # User profile
+├── services/
+│   └── geminiService.ts # Gemini AI integration
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+
+===============================================================================
+PHẦN C: BACKEND SPEC (CHƯA TRIỂN KHAI)
+===============================================================================
+
+6. Back-End doc (API & logic)
+6.1. Tech stack gợi ý
+Language/Framework:
+- Node.js (NestJS/Express + TypeScript) hoặc Java Spring Boot/.NET tuỳ tổ chức.
+- Database: PostgreSQL hoặc MySQL.
+- ORM: TypeORM hoặc Prisma (nếu Node).
+- Auth: JWT (Access + Refresh), SSO/LDAP nếu cần.
+
+Others:
+- Redis (optional) cho cache/leaderboard.
+- Message queue (optional) nếu cần xử lý async heavy.
+
+6.2. Bounded context (trong monolith)
+- Identity & Access: User, Role, Permission, Team.
+- Recognition: Kudos, Badge, Leaderboard.
+- Kaizen: Idea, Vote, Comment, Status.
+- Feedback: Anonymous Feedback, Templates.
+- Rewards: RewardItem, Redemption, PointTransaction.
+- Gamification Engine: Missions, Levels, Rules, Events.
+- Reporting & Audit: event log, audit log.
+
+6.3. API chính (REST)
+Auth:
+- POST /auth/login – login, trả về access token.
+- POST /auth/refresh – refresh token.
+- POST /auth/logout – revoke token.
+- POST /auth/check-domain – kiểm tra domain email có thuộc org nào không.
+- POST /auth/register-org – đăng ký org mới + superadmin.
+- POST /auth/join-request – gửi yêu cầu tham gia org.
+
+Users & Teams:
+- GET /me – thông tin user hiện tại.
+- GET /users/:id – chi tiết user.
+- GET /users?team= – list user theo team.
+- GET /teams – danh sách team.
+
+Kaizen Ideas:
+- GET /ideas – list, có filter & pagination.
+- GET /ideas/:id – chi tiết idea.
+- POST /ideas – tạo idea mới.
+- PATCH /ideas/:id – update (quyền hạn).
+- POST /ideas/:id/vote – upvote idea.
+- POST /ideas/:id/comments – comment.
+- PATCH /ideas/:id/status – thay đổi status (chỉ leader/admin).
+
+Kudos:
+- GET /kudos – feed (có filter: global, team, mine).
+- POST /kudos – gửi kudos.
+- GET /kudos/me – kudos tôi đã nhận.
+
+Feedback:
+- GET /feedback/templates – list template.
+- POST /feedback – gửi feedback ẩn danh.
+- GET /feedback/summary – summary/aggregate (role-based, không lộ danh tính).
+
+Rewards & Points:
+- GET /wallet – số điểm hiện tại + history.
+- GET /rewards – catalog reward.
+- POST /rewards/:id/redeem – gửi yêu cầu redeem.
+- GET /redemptions – list yêu cầu redeem của user.
+
+Gamification:
+- GET /missions/today – missions cho user hiện tại.
+- POST /events – log event (vd: event_type=idea_created), engine xử lý điểm/badge.
+- GET /leaderboard – trả về leaderboard theo tháng/quý/team.
+
+Leader/Admin:
+- GET /leader/dashboard – metrics team.
+- GET /admin/reports – các báo cáo chính.
+- GET/POST/PATCH /admin/rules – rules points/badge/missions.
+- GET/POST/PATCH /admin/rewards – CRUD reward.
+- GET/POST/PATCH /admin/users – quản lý user.
+- GET /admin/join-requests – danh sách yêu cầu tham gia (Superadmin Only).
+- POST /admin/join-requests/:id/approve – duyệt yêu cầu.
+- POST /admin/join-requests/:id/reject – từ chối yêu cầu.
+
+6.4. Business rules (mẫu)
+Điểm từ hành động:
+- Submit 1 Kaizen Idea: +50 points (hiện tại hardcode trong UI).
+- Idea được Approved: +Y points.
+- Idea được Implemented: +Z points.
+- Gửi Kudos: sender +a, receiver +b (có giới hạn/day).
+
+Level:
+- Dựa trên tổng điểm tích luỹ.
+- Mỗi level unlock badge hoặc quyền truy cập tính năng/mission nâng cao.
+
+Leaderboard:
+- Tính theo tháng/quý.
+- Có thể dùng normalized score để công bằng giữa team lớn/nhỏ.
+
+Feedback ẩn danh:
+- Lưu mapping user → feedback ở bảng riêng, encrypt, chỉ phục vụ analytics nội bộ với quyền rất hạn chế.
+
+7. Kiến trúc monolith
+7.1. Tổng quan
+- Frontend: SPA/PWA (React) deploy tách static hosting.
+- Backend: Monolith API (REST) với modules logic rõ ràng.
+- Database: 1 instance relational DB.
+
+7.2. Layering (backend)
+- Presentation layer: controllers (HTTP handlers).
+- Application layer: services/use-cases, orchestrate business logic.
+- Domain layer: entities, domain services, rules.
+- Infrastructure layer: ORM repositories, external integrations (email, notifications, SSO).
+
+Thư mục gợi ý:
+/src/modules/auth
+/src/modules/users
+/src/modules/teams
+/src/modules/ideas
+/src/modules/kudos
+/src/modules/feedback
+/src/modules/rewards
+/src/modules/gamification
+/src/modules/admin
+
+7.3. Integration & extensibility
+Hook event (domain events) cho các hành động chính:
+- IdeaCreated, IdeaApproved, KudosSent, RewardRedeemed.
+Các event này có thể được dùng:
+- Gửi email/notification.
+- Gửi sang hệ thống BI/HRIS khác.
+
+7.4. Deployment & môi trường
+- Môi trường: dev / staging / prod.
+- CI/CD: build + test + deploy container.
+- Free/low-cost hosting:
+  - DB: PostgreSQL/MySQL free tier.
+  - Backend: Docker trên server rẻ / PaaS free tier.
+  - Frontend: Vercel/Netlify.
+
+===============================================================================
+PHẦN D: DATABASE SCHEMA (CHƯA TRIỂN KHAI)
+===============================================================================
+
+8. Thiết kế cơ sở dữ liệu
+8.1. Bảng core
+users
+- id (PK)
+- email (unique)
+- password_hash
+- name
+- avatar_url
+- role (enum: member, leader, admin)
+- team_id (FK → teams.id)
+- position
+- is_active (bool)
+- created_at
+- updated_at
+
+teams
+- id (PK)
+- name
+- parent_team_id (FK → teams.id, nullable)
+- created_at
+- updated_at
+
+user_profiles (optional)
+- user_id (PK, FK → users.id)
+- bio
+- preferences_json
+- locale
+- timezone
+- created_at
+  updated_at
+
+organizations
+- id (PK)
+- name
+- domain (unique)
+- created_at
+- updated_at
+
+join_requests
+- id (PK)
+- email
+- name
+- password_hash
+- org_id (FK -> organizations.id)
+- status (enum: PENDING, APPROVED, REJECTED)
+- created_at
+
+8.2. Recognition & Kaizen
+kudos
+- id (PK)
+- sender_id (FK → users.id)
+- receiver_id (FK → users.id)
+- core_value (enum)
+- message (text)
+- points_awarded (int)
+- created_at
+
+kaizen_ideas
+- id (PK)
+- creator_id (FK → users.id)
+- title
+- problem_text (text)
+- proposal_text (text)
+- impact_type (enum: cost, speed, quality, safety, other)
+- status (enum: new, in_review, approved, implemented, rejected)
+- team_id (FK → teams.id)
+- created_at
+- updated_at
+
+kaizen_votes
+- id (PK)
+- idea_id (FK → kaizen_ideas.id)
+- voter_id (FK → users.id)
+- created_at
+- (Unique constraint trên idea_id, voter_id)
+
+kaizen_comments
+- id (PK)
+- idea_id (FK → kaizen_ideas.id)
+- user_id (FK → users.id)
+- comment_text (text)
+- created_at
+
+8.3. Anonymous Feedback
+feedback_templates
+- id (PK)
+- name
+- type (enum: start_stop_continue, nps, four_l, custom)
+- schema_json (JSON)
+- is_active (bool)
+- created_at
+- updated_at
+
+feedback_entries
+- id (PK)
+- template_id (FK → feedback_templates.id)
+- target_type (enum: user, team, company)
+- target_id (nullable, FK → users.id hoặc teams.id tuỳ type)
+- content_json (JSON)
+- score (nullable, số NPS, v.v.)
+- created_at
+
+feedback_identity_map
+- id (PK)
+- feedback_id (FK → feedback_entries.id)
+- user_id (FK → users.id)
+- created_at
+- (Bảng này cần bảo vệ kỹ, phân quyền riêng.)
+
+8.4. Gamification & points
+point_transactions
+- id (PK)
+- user_id (FK → users.id)
+- amount (int, + earn, - spend)
+- type (enum: earn, spend)
+- source (enum: idea_created, idea_approved, idea_implemented, kudos_sent, kudos_received, admin_adjust, redeem, mission_completed, streak_bonus)
+- reference_id (nullable, link đến entity liên quan)
+- created_at
+
+user_points_balance (optional)
+- user_id (PK, FK → users.id)
+- balance (int)
+- monthly_points (int)
+- quarterly_points (int)
+- updated_at
+- (Có thể bỏ bảng này và tính bằng SUM trên point_transactions.)
+
+levels
+- id (PK)
+- name
+- min_points (int)
+- max_points (int)
+- badge_id (FK → badges.id, nullable)
+- benefits_json (JSON)
+
+badges
+- id (PK)
+- name
+- code (unique)
+- description
+- icon_url
+- criteria_json (JSON)
+
+user_badges
+- id (PK)
+- user_id (FK → users.id)
+- badge_id (FK → badges.id)
+- awarded_at
+- reason (text)
+
+missions
+- id (PK)
+- name
+- description
+- trigger_type (enum: daily, weekly, event)
+- rules_json (JSON) – định nghĩa logic, ví dụ: { "event": "idea_created", "min_count": 1, "period": "day" }
+- reward_points (int)
+- is_active (bool)
+- created_at
+- updated_at
+
+user_missions
+- id (PK)
+- user_id (FK → users.id)
+- mission_id (FK → missions.id)
+- status (enum: active, completed, expired, claimed)
+- progress_value (int)
+- period_start (datetime)
+- period_end (datetime)
+- updated_at
+
+8.5. Rewards
+rewards
+- id (PK)
+- name
+- description
+- image_url
+- points_cost (int)
+- stock (int)
+- type (enum: voucher, day_off, merchandise, other)
+- is_active (bool)
+- metadata_json (JSON)
+- created_at
+- updated_at
+
+redemption_requests
+- id (PK)
+- user_id (FK → users.id)
+- reward_id (FK → rewards.id)
+- status (enum: pending, approved, rejected, fulfilled)
+- requested_at
+- processed_by (FK → users.id, nullable)
+- processed_at (nullable)
+- note (text, nullable)
+
+8.6. Reporting & audit
+events
+- id (PK)
+- user_id (FK → users.id, nullable nếu system event)
+- event_type (string)
+- payload_json (JSON)
+- created_at
+
+audit_logs
+- id (PK)
+- actor_id (FK → users.id)
+- action (string)
+- entity_type (string)
+- entity_id (string)
+- before_json (JSON, nullable)
+- after_json (JSON, nullable)
+- created_at
+
+===============================================================================
+PHẦN E: ROADMAP & TODO
+===============================================================================
+
+9. Tính năng đã triển khai
+✅ Dashboard với stats, missions, activity feed.
+✅ Kaizen Ideas listing và create form với AI polish.
+✅ Kudos feed (Wow Wall) và send form với AI polish.
+✅ Leaderboard với period filter và team filter.
+✅ Badges collection với unlock/lock status.
+✅ Rewards catalog và transaction history.
+✅ Anonymous feedback form với templates (NPS, Start/Stop/Continue, 4L, Open).
+✅ Profile page với stats và navigation.
+✅ Responsive design (mobile + desktop).
+✅ Gemini AI integration cho text polishing.
+✅ Multi-tenancy Architecture (Organization & JoinRequests).
+✅ Owner Dashboard (Member Requests management).
+✅ Claim mission rewards với point updates.
+✅ LocalStorage data persistence (storageService.ts).
+✅ Idea detail page (/ideas/:id) với chi tiết, status timeline.
+✅ Voting functionality (toggle vote, persist vào localStorage).
+✅ Comment functionality (add comments to ideas).
+✅ Follow ideas (toggle follow status).
+✅ Kudos like/react (persist likes vào localStorage).
+✅ User search/select for kudos recipient (UserSelectModal).
+✅ Reward redemption flow (RedeemModal, confirmation, points deduction).
+
+✅ Data Reset functionality (Settings page).
+✅ Language selection UI (Settings page - UI ready, i18n chưa implement).
+✅ Onboarding flow (4 slides cho first-time users).
+✅ Data Reset functionality (Settings page).
+
+✅ Language selection và i18n (English, Vietnamese, Japanese).
+✅ Management Dashboard (/management) cho Leader/Admin.
+✅ In-app Notification system với real-time updates.
+✅ PWA capabilities (Service worker registration).
+✅ Kết nối Frontend với Backend API (Auth, Ideas, Kudos, Rewards, v.v.).
+
+✅ SYSTEM_ADMIN Role - Platform-level admin không thuộc organization cụ thể.
+✅ isActive field trong auth response - Trả về trạng thái active của user khi login/register.
+✅ Console access riêng cho SYSTEM_ADMIN (thay vì SUPERADMIN).
+✅ Diagnostic logging cho login flow (debug mode).
+✅ GitHub Pages deployment với relative paths.
+✅ Railway backend deployment với health check endpoint.
+
+
+10. Tính năng cần bổ sung (Lộ trình tiếp theo)
+❌ Push/email notifications (External services).
+❌ AI-driven insights report cho leadership.
+❌ SSO Integration.
+
+11. Ghi chú sử dụng cho AI Dev Tool
+File này có thể dùng làm product spec + tech spec cấp cao cho AI Dev hoặc team dev.
+Bước tiếp theo có thể là:
+1. Triển khai Backend với APIs đã spec.
+2. Kết nối Frontend với Backend APIs (replace mock data).
+3. Thêm authentication flow.
+4. Triển khai các tính năng còn thiếu.
+
+Có thể chia nhỏ thành các file:
+- 01-Product-Spec.md
+- 02-UI-Spec.md
+- 03-Frontend-Architecture.md
+- 04-Backend-API-Spec.md
+- 05-Database-Schema.md
+- 06-System-Architecture.md
