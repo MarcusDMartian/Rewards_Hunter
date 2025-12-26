@@ -127,11 +127,20 @@ export default function Layout({ children }: LayoutProps) {
                         </button>
 
                         <Link to="/profile" className="flex items-center gap-2">
-                            <img
-                                src={currentUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
-                                alt={currentUser?.name || 'User'}
-                                className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
-                            />
+                            {currentUser?.avatar ? (
+                                <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser?.name || 'User'}
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                />
+                            ) : null}
+                            <div className={`w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center ${currentUser?.avatar ? 'hidden' : ''}`}>
+                                <User className="w-4 h-4 text-white" />
+                            </div>
                         </Link>
 
                         <button
@@ -173,11 +182,20 @@ export default function Layout({ children }: LayoutProps) {
                         </button>
 
                         <Link to="/profile">
-                            <img
-                                src={currentUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
-                                alt={currentUser?.name || 'User'}
-                                className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
-                            />
+                            {currentUser?.avatar ? (
+                                <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser?.name || 'User'}
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                />
+                            ) : null}
+                            <div className={`w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center ${currentUser?.avatar ? 'hidden' : ''}`}>
+                                <User className="w-4 h-4 text-white" />
+                            </div>
                         </Link>
                     </div>
                 </div>
