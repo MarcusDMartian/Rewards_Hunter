@@ -446,6 +446,7 @@ export const IMPACT_TYPES = [
 export const MOCK_ORGANIZATIONS: Organization[] = [
     { id: 'org1', name: 'ACME Corporation', domain: 'company.com', createdAt: '2024-01-01T00:00:00Z' },
     { id: 'org2', name: 'TechStart Inc', domain: 'techstart.io', createdAt: '2024-06-15T00:00:00Z' },
+    { id: 'platform', name: 'KaizenHub Platform', domain: 'rewardhunter.app', createdAt: '2024-01-01T00:00:00Z' },
 ];
 
 // ============================================
@@ -500,6 +501,7 @@ export const SYSTEM_ADMIN_USER: User = {
     streak: 0,
     badges: [],
     isActive: true,
+    orgId: 'platform',
 };
 
 // ============================================
