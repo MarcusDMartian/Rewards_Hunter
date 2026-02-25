@@ -1,0 +1,325 @@
+// ============================================
+// PRISMA SCHEMA - Reward Hunter Database
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE: Organizations, Teams, Users
+// ============================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  joinRequests JoinRequest[]
+  teams        Team[]
+}
+
+model Team {
+  id           String  @id @default(uuid())
+  name         String
+  parentTeamId String?
+  orgId        String
+
+  parentTeam Team?  @relation("TeamHierarchy", fields: [parentTeamId], references: [id])
+  childTeams Team[] @relation("TeamHierarchy")
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  users        User[]
+
+  @@unique([name, orgId])
+}
+
+model User {
+  id             String  @id @default(uuid())
+  email          String  @unique
+  passwordHash   String
+  name           String
+  avatar         String  @default("")
+  role           String  @default("Member") // Member, Leader, Admin, Superadmin, SystemAdmin
+  position       String  @default("Team Member")
+  points         Int     @default(0)
+  monthlyPoints  Int     @default(0)
+  quarterlyPoints Int    @default(0)
+  level          Int     @default(1)
+  nextLevelPoints Int    @default(100)
+  streak         Int     @default(0)
+  lastActiveDate String? // ISO date string for streak tracking
+  isActive       Boolean @default(true)
+
+  teamId String?
+  orgId  String?
+
+  team         Team?         @relation(fields: [teamId], references: [id])
+  organization Organization? @relation(fields: [orgId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  kaizenIdeas      KaizenIdea[]
+  kaizenVotes      KaizenVote[]
+  kaizenComments   KaizenComment[]
+  kaizenFollows    KaizenFollow[]
+  kudosSent        Kudos[]            @relation("KudosSender")
+  kudosReceived    Kudos[]            @relation("KudosReceiver")
+  kudosLikes       KudosLike[]
+  pointTransactions PointTransaction[]
+  redemptionRequests RedemptionRequest[]
+  userBadges       UserBadge[]
+  userMissions     UserMission[]
+  feedbackIdentity FeedbackIdentityMap[]
+}
+
+model JoinRequest {
+  id           String   @id @default(uuid())
+  email        String
+  name         String
+  passwordHash String
+  orgId        String
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt    DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id])
+}
+
+// ============================================
+// KAIZEN IDEAS
+// ============================================
+
+model KaizenIdea {
+  id         String   @id @default(uuid())
+  title      String
+  problem    String
+  proposal   String
+  impact     String   // Cost, Quality, Speed, Safety
+  status     String   @default("New") // New, In Review, Approved, Implemented, Rejected
+  creatorId  String
+  teamId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  creator  User            @relation(fields: [creatorId], references: [id])
+  votes    KaizenVote[]
+  comments KaizenComment[]
+  follows  KaizenFollow[]
+}
+
+model KaizenVote {
+  id        String   @id @default(uuid())
+  ideaId    String
+  voterId   String
+  createdAt DateTime @default(now())
+
+  idea  KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  voter User       @relation(fields: [voterId], references: [id])
+
+  @@unique([ideaId, voterId])
+}
+
+model KaizenComment {
+  id        String   @id @default(uuid())
+  ideaId    String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  idea KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id])
+}
+
+model KaizenFollow {
+  id        String   @id @default(uuid())
+  ideaId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  idea KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id])
+
+  @@unique([ideaId, userId])
+}
+
+// ============================================
+// KUDOS
+// ============================================
+
+model Kudos {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  coreValue  String   // Kaizen, Collaboration, Ownership, Customer First
+  message    String
+  createdAt  DateTime @default(now())
+
+  sender   User        @relation("KudosSender", fields: [senderId], references: [id])
+  receiver User        @relation("KudosReceiver", fields: [receiverId], references: [id])
+  likes    KudosLike[]
+}
+
+model KudosLike {
+  id        String   @id @default(uuid())
+  kudosId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  kudos Kudos @relation(fields: [kudosId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([kudosId, userId])
+}
+
+// ============================================
+// REWARDS & POINTS
+// ============================================
+
+model Reward {
+  id          String  @id @default(uuid())
+  name        String
+  description String  @default("")
+  image       String  @default("")
+  cost        Int
+  type        String  // Voucher, DayOff, Merch
+  stock       Int     @default(0)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  redemptions RedemptionRequest[]
+}
+
+model PointTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Int      // positive = earn, negative = spend
+  type        String   // earn, spend
+  source      String   // idea_created, idea_approved, kudos_sent, kudos_received, redeem, mission_completed, streak_bonus, admin_adjust
+  referenceId String?
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model RedemptionRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  rewardId    String
+  rewardName  String
+  pointsCost  Int
+  status      String   @default("Pending") // Pending, Approved, Rejected, Fulfilled
+  note        String?
+  processedBy String?
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id])
+  reward Reward @relation(fields: [rewardId], references: [id])
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Badge {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  icon        String  @default("🏆")
+  color       String  @default("bg-indigo-100")
+  description String  @default("")
+  criteriaJson String @default("{}") // JSON string
+
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+  reason    String   @default("")
+
+  user  User  @relation(fields: [userId], references: [id])
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+model Mission {
+  id           String  @id @default(uuid())
+  title        String
+  description  String  @default("")
+  type         String  @default("daily") // daily, weekly
+  triggerEvent String  @default("") // idea_created, kudos_sent, daily_login, etc.
+  targetCount  Int     @default(1)
+  rewardPoints Int     @default(10)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userMissions UserMission[]
+}
+
+model UserMission {
+  id          String   @id @default(uuid())
+  userId      String
+  missionId   String
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  claimed     Boolean  @default(false)
+  periodStart DateTime @default(now())
+  periodEnd   DateTime
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  mission Mission @relation(fields: [missionId], references: [id])
+
+  @@unique([userId, missionId, periodStart])
+}
+
+// ============================================
+// ANONYMOUS FEEDBACK
+// ============================================
+
+model FeedbackTemplate {
+  id       String  @id @default(uuid())
+  name     String
+  type     String  // start_stop_continue, nps, four_l, open
+  isActive Boolean @default(true)
+
+  entries FeedbackEntry[]
+}
+
+model FeedbackEntry {
+  id         String   @id @default(uuid())
+  templateId String
+  targetType String   // user, team, company
+  targetId   String?
+  contentJson String  @default("{}") // JSON
+  score      Int?
+  createdAt  DateTime @default(now())
+
+  template FeedbackTemplate @relation(fields: [templateId], references: [id])
+  identityMap FeedbackIdentityMap?
+}
+
+model FeedbackIdentityMap {
+  id         String @id @default(uuid())
+  feedbackId String @unique
+  userId     String
+
+  feedback FeedbackEntry @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id])
+}

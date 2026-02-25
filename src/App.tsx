@@ -4,8 +4,10 @@
 
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { isOnboardingComplete } from './services/storageService';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Layout
 import Layout from './components/Layout';
@@ -26,6 +28,7 @@ import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
 import Management from './pages/Management';
 import Console from './pages/Console';
+import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
@@ -102,7 +105,7 @@ function AppRoutes() {
                                 <Route path="/settings" element={<Settings />} />
 
                                 {/* Fallback */}
-                                <Route path="*" element={<Navigate to="/" replace />} />
+                                <Route path="*" element={<NotFound />} />
                             </Routes>
                         </Layout>
                     </ProtectedRoute>
@@ -114,13 +117,17 @@ function AppRoutes() {
 
 function App() {
     return (
-        <AuthProvider>
-            <ThemeProvider>
-                <HashRouter>
-                    <AppRoutes />
-                </HashRouter>
-            </ThemeProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <ThemeProvider>
+                    <ToastProvider>
+                        <HashRouter>
+                            <AppRoutes />
+                        </HashRouter>
+                    </ToastProvider>
+                </ThemeProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 

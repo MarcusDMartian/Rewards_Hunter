@@ -15,8 +15,12 @@ import {
 } from 'lucide-react';
 import { KaizenIdea } from '../types';
 import { getIdeas, addIdea, toggleVote, getCurrentUser, updateUserPoints, addTransaction } from '../services/storageService';
+import { processGameEvent } from '../services/gamificationService';
 import { generateRefinedText, isAIAvailable } from '../services/geminiService';
 import { IMPACT_TYPES } from '../constants';
+import Pagination from '../components/Pagination';
+import { useToast } from '../contexts/ToastContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 type FilterType = 'latest' | 'top' | 'implemented' | 'myteam';
 
@@ -25,9 +29,13 @@ export default function KaizenIdeas() {
     const [activeTab, setActiveTab] = useState<'browse' | 'create'>(
         searchParams.get('tab') === 'create' ? 'create' : 'browse'
     );
+    usePageTitle(activeTab === 'create' ? 'Submit Idea' : 'Kaizen Ideas');
     const [ideas, setIdeas] = useState<KaizenIdea[]>([]);
     const [filter, setFilter] = useState<FilterType>('latest');
+    const [page, setPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
     const user = getCurrentUser();
+    const { addToast } = useToast();
 
     // Form state
     const [title, setTitle] = useState('');
@@ -36,6 +44,7 @@ export default function KaizenIdeas() {
     const [impact, setImpact] = useState<'Cost' | 'Quality' | 'Speed' | 'Safety'>('Speed');
     const [isPolishing, setIsPolishing] = useState<'problem' | 'proposal' | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         loadIdeas();
@@ -74,6 +83,12 @@ export default function KaizenIdeas() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const newErrors: Record<string, string> = {};
+        if (title.trim().length < 10) newErrors.title = 'Title must be at least 10 characters';
+        if (problem.trim().length < 20) newErrors.problem = 'Problem description must be at least 20 characters';
+        if (proposal.trim().length < 20) newErrors.proposal = 'Proposal must be at least 20 characters';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
         if (!title.trim() || !problem.trim() || !proposal.trim()) return;
 
         setIsSubmitting(true);
@@ -111,6 +126,11 @@ export default function KaizenIdeas() {
             date: new Date().toISOString(),
         });
 
+        // Auto-trigger gamification
+        processGameEvent('idea_created');
+
+        addToast('💡 Idea submitted successfully! +50 pts', 'success');
+
         // Reset form
         setTitle('');
         setProblem('');
@@ -121,7 +141,7 @@ export default function KaizenIdeas() {
         handleTabChange('browse');
     };
 
-    // Filter ideas
+    // Filter and paginate ideas
     const filteredIdeas = [...ideas]
         .filter((idea) => {
             if (filter === 'implemented') return idea.status === 'Implemented';
@@ -132,6 +152,9 @@ export default function KaizenIdeas() {
             if (filter === 'top') return b.votes - a.votes;
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
+
+    const totalItems = filteredIdeas.length;
+    const paginatedIdeas = filteredIdeas.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -175,8 +198,8 @@ export default function KaizenIdeas() {
                 <button
                     onClick={() => handleTabChange('browse')}
                     className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${activeTab === 'browse'
-                            ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                         }`}
                 >
                     Browse Ideas
@@ -184,8 +207,8 @@ export default function KaizenIdeas() {
                 <button
                     onClick={() => handleTabChange('create')}
                     className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${activeTab === 'create'
-                            ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                         }`}
                 >
                     Submit New
@@ -201,10 +224,10 @@ export default function KaizenIdeas() {
                         {(['latest', 'top', 'implemented', 'myteam'] as FilterType[]).map((f) => (
                             <button
                                 key={f}
-                                onClick={() => setFilter(f)}
+                                onClick={() => { setFilter(f); setPage(1); }}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${filter === f
-                                        ? 'bg-indigo-500 text-white'
-                                        : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700/60'
+                                    ? 'bg-indigo-500 text-white'
+                                    : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700/60'
                                     }`}
                             >
                                 {f === 'latest' && 'Latest'}
@@ -228,7 +251,7 @@ export default function KaizenIdeas() {
                                 </p>
                             </div>
                         ) : (
-                            filteredIdeas.map((idea) => {
+                            paginatedIdeas.map((idea) => {
                                 const hasVoted = idea.votedBy.includes(user.id);
                                 return (
                                     <Link
@@ -297,8 +320,8 @@ export default function KaizenIdeas() {
                                                                 handleVote(idea.id);
                                                             }}
                                                             className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${hasVoted
-                                                                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                                                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500'
+                                                                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500'
                                                                 }`}
                                                         >
                                                             <ChevronUp className={`w-4 h-4 ${hasVoted ? 'text-indigo-500' : ''}`} />
@@ -318,6 +341,13 @@ export default function KaizenIdeas() {
                             })
                         )}
                     </div>
+
+                    <Pagination
+                        currentPage={page}
+                        totalItems={totalItems}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        onPageChange={setPage}
+                    />
                 </>
             )}
 
@@ -337,6 +367,7 @@ export default function KaizenIdeas() {
                             className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                         />
+                        {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
                     </div>
 
                     {/* Impact Type */}
@@ -351,8 +382,8 @@ export default function KaizenIdeas() {
                                     type="button"
                                     onClick={() => setImpact(type.name.split(' ')[0] as typeof impact)}
                                     className={`p-3 rounded-xl border-2 transition-all ${impact.toLowerCase().includes(type.id)
-                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                         }`}
                                 >
                                     <span className="text-xl block mb-1">{type.icon}</span>

@@ -15,9 +15,12 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getCurrentUser, getMissions, claimMission, getIdeas } from '../services/storageService';
+import { processGameEvent } from '../services/gamificationService';
+import usePageTitle from '../hooks/usePageTitle';
 import { Mission, KaizenIdea } from '../types';
 
 export default function Dashboard() {
+    usePageTitle('Dashboard');
     const [user, setUser] = useState(getCurrentUser());
     const [missions, setMissions] = useState<Mission[]>(getMissions());
     const [recentIdeas, setRecentIdeas] = useState<KaizenIdea[]>([]);
@@ -25,6 +28,8 @@ export default function Dashboard() {
     useEffect(() => {
         const ideas = getIdeas().slice(0, 3);
         setRecentIdeas(ideas);
+        // Auto-trigger daily login for streak tracking
+        processGameEvent('daily_login');
     }, []);
 
     const handleClaimMission = (missionId: string) => {

@@ -2,7 +2,7 @@
 // LAYOUT COMPONENT - MAIN NAVIGATION & STRUCTURE
 // ============================================
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Home,
@@ -19,9 +19,11 @@ import {
     Building2,
     Server,
     LogOut,
+    Search,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import SearchModal from './SearchModal';
 
 interface LayoutProps {
     children: ReactNode;
@@ -42,6 +44,19 @@ export default function Layout({ children }: LayoutProps) {
     const navigate = useNavigate();
     const { isDark, toggleTheme } = useTheme();
     const { currentUser, logout } = useAuth();
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Cmd+K shortcut
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, []);
 
     const isActive = (path: string) => {
         if (path === '/') return location.pathname === '/';
@@ -111,6 +126,14 @@ export default function Layout({ children }: LayoutProps) {
                     {/* Actions */}
                     <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
                         <button
+                            onClick={() => setIsSearchOpen(true)}
+                            className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors"
+                            title="Search (⌘K)"
+                        >
+                            <Search className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                        </button>
+
+                        <button
                             onClick={toggleTheme}
                             className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors"
                         >
@@ -165,6 +188,12 @@ export default function Layout({ children }: LayoutProps) {
                     </Link>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsSearchOpen(true)}
+                            className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors"
+                        >
+                            <Search className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                        </button>
                         <button
                             onClick={toggleTheme}
                             className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors"
@@ -232,6 +261,9 @@ export default function Layout({ children }: LayoutProps) {
                     )}
                 </div>
             </nav>
+
+            {/* Global Search Modal */}
+            <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
     );
 }
