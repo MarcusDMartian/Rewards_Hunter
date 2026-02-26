@@ -22,8 +22,13 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
  * Check if email domain belongs to an existing organization
  */
 export const checkDomain = async (email: string): Promise<DomainCheckResult> => {
-    const { data } = await api.post('/auth/check-domain', { email });
-    return data;
+    try {
+        const { data } = await api.post('/auth/check-domain', { email });
+        return data;
+    } catch (error: any) {
+        console.error('Domain check failed:', error);
+        return { exists: false, organization: undefined };
+    }
 };
 
 /**
