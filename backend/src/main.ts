@@ -9,11 +9,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // Enable CORS with fixed settings for production
   app.enableCors({
-    origin: true, // Allow all origins in production for flexibility
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow all origins (reflecting them)
+      callback(null, true);
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
   });
 
   // Enable validation
@@ -24,6 +28,10 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api');
+
+  // Simple Root Route for Health Check
+  const server = app.getHttpAdapter().getInstance();
+  server.get('/', (req: any, res: any) => res.send('Reward Hunter API is Live! 🚀'));
 
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
