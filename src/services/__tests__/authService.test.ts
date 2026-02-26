@@ -157,7 +157,7 @@ describe('authService', () => {
         const result = await checkDomain('user@company.com');
 
         expect(result.exists).toBe(true);
-        expect(result.organization.domain).toBe('company.com');
+        expect(result.organization?.domain).toBe('company.com');
     });
 
     // ---- logout ----
