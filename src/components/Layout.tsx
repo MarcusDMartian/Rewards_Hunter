@@ -45,6 +45,7 @@ export default function Layout({ children }: LayoutProps) {
     const { isDark, toggleTheme } = useTheme();
     const { currentUser, logout } = useAuth();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     // Cmd+K shortcut
     useEffect(() => {
@@ -150,23 +151,18 @@ export default function Layout({ children }: LayoutProps) {
                         </button>
 
                         <Link to="/profile" className="flex items-center gap-2">
-                            {currentUser?.avatar ? (
+                            {currentUser?.avatar && !avatarError ? (
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
                                     className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
-                                    onError={(e) => {
-                                        // Hide the broken image and show the fallback sibling
-                                        e.currentTarget.style.display = 'none';
-                                        if (e.currentTarget.nextElementSibling) {
-                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                        }
-                                    }}
+                                    onError={() => setAvatarError(true)}
                                 />
-                            ) : null}
-                            <div className={`w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center ${currentUser?.avatar ? 'hidden' : ''}`}>
-                                <User className="w-4 h-4 text-white" />
-                            </div>
+                            ) : (
+                                <div className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-white" />
+                                </div>
+                            )}
                         </Link>
 
                         <button
@@ -214,22 +210,18 @@ export default function Layout({ children }: LayoutProps) {
                         </button>
 
                         <Link to="/profile">
-                            {currentUser?.avatar ? (
+                            {currentUser?.avatar && !avatarError ? (
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
                                     className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
-                                    onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                        if (e.currentTarget.nextElementSibling) {
-                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                        }
-                                    }}
+                                    onError={() => setAvatarError(true)}
                                 />
-                            ) : null}
-                            <div className={`w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center ${currentUser?.avatar ? 'hidden' : ''}`}>
-                                <User className="w-4 h-4 text-white" />
-                            </div>
+                            ) : (
+                                <div className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-white" />
+                                </div>
+                            )}
                         </Link>
                     </div>
                 </div>
