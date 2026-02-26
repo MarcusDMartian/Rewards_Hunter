@@ -2,6 +2,7 @@
 // PROFILE PAGE - USER PROFILE & NAVIGATION
 // ============================================
 
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Settings,
@@ -15,18 +16,25 @@ import {
     Zap,
     Flame,
 } from 'lucide-react';
-import { getCurrentUser, getMissions, clearAuthToken } from '../services/storageService';
+import { getCurrentUser, getMissions } from '../services/storageService';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { Mission } from '../types';
 
 export default function Profile() {
     const user = getCurrentUser();
-    const missions = getMissions();
+    const [missions, setMissions] = useState<Mission[]>([]);
     const navigate = useNavigate();
 
-    const activeMissions = missions.filter((m) => !m.claimed).slice(0, 3);
+    useEffect(() => {
+        getMissions().then(data => setMissions(data));
+    }, []);
+
+    const activeMissions = missions.filter((m: Mission) => !m.claimed).slice(0, 3);
     const progressPercent = (user.points / user.nextLevelPoints) * 100;
 
     const handleLogout = () => {
-        clearAuthToken();
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
         navigate('/');
     };
 

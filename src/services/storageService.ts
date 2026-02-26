@@ -1,9 +1,9 @@
 // ============================================
-// STORAGE SERVICE - LOCALSTORAGE PERSISTENCE
+// STORAGE SERVICE - API-backed data service
 // ============================================
 
+import api from './apiClient';
 import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest } from '../types';
-import { CURRENT_USER, MOCK_IDEAS, MOCK_KUDOS, MOCK_MISSIONS, MOCK_TRANSACTIONS } from '../data/mockData';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // ============================================
@@ -15,23 +15,24 @@ export function getCurrentUser(): User {
         try {
             return JSON.parse(stored);
         } catch {
-            return CURRENT_USER;
+            return {} as User;
         }
     }
-    return CURRENT_USER;
+    return {} as User;
 }
 
 export function saveCurrentUser(user: User): void {
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
 }
 
-export function updateUserPoints(amount: number): User {
+export async function updateUserPoints(amount: number): Promise<User> {
+    // Points are managed server-side via gamification events
+    // This is a no-op for forward compatibility — the server handles point updates
     const user = getCurrentUser();
     user.points += amount;
     user.monthlyPoints += amount;
     user.quarterlyPoints += amount;
 
-    // Level up check
     while (user.points >= user.nextLevelPoints) {
         user.level += 1;
         user.nextLevelPoints = Math.floor(user.nextLevelPoints * 1.5);
@@ -44,228 +45,158 @@ export function updateUserPoints(amount: number): User {
 // ============================================
 // KAIZEN IDEAS
 // ============================================
-export function getIdeas(): KaizenIdea[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.IDEAS);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            return MOCK_IDEAS;
-        }
+export async function getIdeas(filter?: string, teamId?: string): Promise<KaizenIdea[]> {
+    try {
+        const params = new URLSearchParams();
+        if (filter) params.append('filter', filter);
+        if (teamId) params.append('teamId', teamId);
+        const { data } = await api.get(`/ideas?${params.toString()}`);
+        return data;
+    } catch {
+        return [];
     }
-    return MOCK_IDEAS;
 }
 
-export function saveIdeas(ideas: KaizenIdea[]): void {
-    localStorage.setItem(STORAGE_KEYS.IDEAS, JSON.stringify(ideas));
-}
-
-export function addIdea(idea: KaizenIdea): KaizenIdea[] {
-    const ideas = getIdeas();
-    ideas.unshift(idea);
-    saveIdeas(ideas);
-    return ideas;
-}
-
-export function updateIdea(ideaId: string, updates: Partial<KaizenIdea>): KaizenIdea[] {
-    const ideas = getIdeas();
-    const index = ideas.findIndex(i => i.id === ideaId);
-    if (index !== -1) {
-        ideas[index] = { ...ideas[index], ...updates };
-        saveIdeas(ideas);
+export async function getIdeaById(id: string): Promise<KaizenIdea | null> {
+    try {
+        const { data } = await api.get(`/ideas/${id}`);
+        return data;
+    } catch {
+        return null;
     }
-    return ideas;
 }
 
-export function toggleVote(ideaId: string, userId: string): KaizenIdea[] {
-    const ideas = getIdeas();
-    const idea = ideas.find(i => i.id === ideaId);
-    if (idea) {
-        const hasVoted = idea.votedBy.includes(userId);
-        if (hasVoted) {
-            idea.votedBy = idea.votedBy.filter(id => id !== userId);
-            idea.votes -= 1;
-        } else {
-            idea.votedBy.push(userId);
-            idea.votes += 1;
-        }
-        saveIdeas(ideas);
-    }
-    return ideas;
+export async function addIdea(idea: { title: string; problem: string; proposal: string; impact: string }): Promise<KaizenIdea> {
+    const { data } = await api.post('/ideas', idea);
+    return data;
 }
 
-export function toggleFollow(ideaId: string, userId: string): KaizenIdea[] {
-    const ideas = getIdeas();
-    const idea = ideas.find(i => i.id === ideaId);
-    if (idea) {
-        const isFollowing = idea.followers.includes(userId);
-        if (isFollowing) {
-            idea.followers = idea.followers.filter(id => id !== userId);
-        } else {
-            idea.followers.push(userId);
-        }
-        saveIdeas(ideas);
+export async function updateIdea(ideaId: string, updates: Partial<KaizenIdea>): Promise<KaizenIdea> {
+    if (updates.status) {
+        const { data } = await api.patch(`/ideas/${ideaId}/status`, { status: updates.status });
+        return data;
     }
-    return ideas;
+    return {} as KaizenIdea;
 }
 
-export function addComment(ideaId: string, comment: { id: string; userId: string; userName: string; userAvatar: string; text: string; createdAt: string }): KaizenIdea[] {
-    const ideas = getIdeas();
-    const idea = ideas.find(i => i.id === ideaId);
-    if (idea) {
-        idea.comments.push(comment);
-        saveIdeas(ideas);
-    }
-    return ideas;
+export async function toggleVote(ideaId: string, _userId: string): Promise<KaizenIdea> {
+    const { data } = await api.post(`/ideas/${ideaId}/vote`);
+    return data;
+}
+
+export async function toggleFollow(ideaId: string, _userId: string): Promise<KaizenIdea> {
+    const { data } = await api.post(`/ideas/${ideaId}/follow`);
+    return data;
+}
+
+export async function addComment(ideaId: string, comment: { text: string }): Promise<KaizenIdea> {
+    const { data } = await api.post(`/ideas/${ideaId}/comments`, { text: comment.text });
+    return data;
 }
 
 // ============================================
 // KUDOS
 // ============================================
-export function getKudos(): Kudos[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.KUDOS);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            return MOCK_KUDOS;
-        }
+export async function getKudos(teamId?: string): Promise<Kudos[]> {
+    try {
+        const params = teamId ? `?teamId=${teamId}` : '';
+        const { data } = await api.get(`/kudos${params}`);
+        return data;
+    } catch {
+        return [];
     }
-    return MOCK_KUDOS;
 }
 
-export function saveKudos(kudos: Kudos[]): void {
-    localStorage.setItem(STORAGE_KEYS.KUDOS, JSON.stringify(kudos));
+export async function addKudos(kudos: { receiverId: string; coreValue: string; message: string }): Promise<Kudos> {
+    const { data } = await api.post('/kudos', kudos);
+    return data;
 }
 
-export function addKudos(kudos: Kudos): Kudos[] {
-    const allKudos = getKudos();
-    allKudos.unshift(kudos);
-    saveKudos(allKudos);
-    return allKudos;
-}
-
-export function toggleKudosLike(kudosId: string, userId: string): Kudos[] {
-    const allKudos = getKudos();
-    const kudos = allKudos.find(k => k.id === kudosId);
-    if (kudos) {
-        const hasLiked = kudos.likedBy.includes(userId);
-        if (hasLiked) {
-            kudos.likedBy = kudos.likedBy.filter(id => id !== userId);
-            kudos.likes -= 1;
-        } else {
-            kudos.likedBy.push(userId);
-            kudos.likes += 1;
-        }
-        saveKudos(allKudos);
-    }
-    return allKudos;
+export async function toggleKudosLike(kudosId: string, _userId: string): Promise<Kudos> {
+    const { data } = await api.post(`/kudos/${kudosId}/like`);
+    return data;
 }
 
 // ============================================
 // MISSIONS
 // ============================================
-export function getMissions(): Mission[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.MISSIONS);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            return MOCK_MISSIONS;
-        }
+export async function getMissions(): Promise<Mission[]> {
+    try {
+        const { data } = await api.get('/missions/today');
+        return data;
+    } catch {
+        return [];
     }
-    return MOCK_MISSIONS;
 }
 
-export function saveMissions(missions: Mission[]): void {
-    localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(missions));
-}
-
-export function claimMission(missionId: string): { missions: Mission[]; reward: number } {
-    const missions = getMissions();
-    const mission = missions.find(m => m.id === missionId);
-    let reward = 0;
-    if (mission && mission.completed && !mission.claimed) {
-        mission.claimed = true;
-        reward = mission.reward;
-        saveMissions(missions);
-        updateUserPoints(reward);
-        addTransaction({
-            id: `pt_${Date.now()}`,
-            userId: getCurrentUser().id,
-            description: `Completed mission: ${mission.title}`,
-            amount: reward,
-            type: 'earn',
-            source: 'mission_completed',
-            date: new Date().toISOString(),
-        });
-    }
-    return { missions, reward };
-}
-
-export function updateMissionProgress(missionId: string, progress: number): Mission[] {
-    const missions = getMissions();
-    const mission = missions.find(m => m.id === missionId);
-    if (mission) {
-        mission.progress = Math.min(progress, mission.total);
-        if (mission.progress >= mission.total) {
-            mission.completed = true;
-        }
-        saveMissions(missions);
-    }
-    return missions;
+export async function claimMission(missionId: string): Promise<{ missions: Mission[]; reward: number }> {
+    const { data } = await api.post(`/missions/${missionId}/claim`);
+    return data;
 }
 
 // ============================================
-// TRANSACTIONS
+// TRANSACTIONS (via wallet endpoint)
 // ============================================
-export function getTransactions(): PointTransaction[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            return MOCK_TRANSACTIONS;
-        }
+export async function getTransactions(): Promise<PointTransaction[]> {
+    try {
+        const { data } = await api.get('/wallet');
+        return data.transactions || [];
+    } catch {
+        return [];
     }
-    return MOCK_TRANSACTIONS;
 }
 
-export function saveTransactions(transactions: PointTransaction[]): void {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-}
-
-export function addTransaction(transaction: PointTransaction): PointTransaction[] {
-    const transactions = getTransactions();
-    transactions.unshift(transaction);
-    saveTransactions(transactions);
-    return transactions;
+export async function addTransaction(transaction: PointTransaction): Promise<PointTransaction[]> {
+    // Transactions are created server-side via gamification events
+    // This is a forward-compatibility stub
+    return [transaction];
 }
 
 // ============================================
-// REDEMPTIONS
+// REWARDS & REDEMPTIONS
 // ============================================
-export function getRedemptions(): RedemptionRequest[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.REDEMPTIONS);
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch {
-            return [];
-        }
+export async function getRewards(): Promise<any[]> {
+    try {
+        const { data } = await api.get('/rewards');
+        return data;
+    } catch {
+        return [];
     }
-    return [];
 }
 
-export function saveRedemptions(redemptions: RedemptionRequest[]): void {
-    localStorage.setItem(STORAGE_KEYS.REDEMPTIONS, JSON.stringify(redemptions));
+export async function getRedemptions(): Promise<RedemptionRequest[]> {
+    try {
+        const { data } = await api.get('/redemptions');
+        return data;
+    } catch {
+        return [];
+    }
 }
 
-export function addRedemption(redemption: RedemptionRequest): RedemptionRequest[] {
-    const redemptions = getRedemptions();
-    redemptions.unshift(redemption);
-    saveRedemptions(redemptions);
-    return redemptions;
+export async function addRedemption(rewardId: string): Promise<RedemptionRequest> {
+    const { data } = await api.post(`/rewards/${rewardId}/redeem`);
+    return data;
+}
+
+// ============================================
+// GAMIFICATION EVENTS
+// ============================================
+export async function processGameEvent(eventType: string, referenceId?: string): Promise<any> {
+    try {
+        const { data } = await api.post('/events', { eventType, referenceId });
+        return data;
+    } catch {
+        return null;
+    }
+}
+
+export async function getBadges(): Promise<any[]> {
+    try {
+        const { data } = await api.get('/badges');
+        return data;
+    } catch {
+        return [];
+    }
 }
 
 // ============================================
@@ -277,21 +208,6 @@ export function isOnboardingComplete(): boolean {
 
 export function setOnboardingComplete(): void {
     localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETE, 'true');
-}
-
-// ============================================
-// AUTH
-// ============================================
-export function getAuthToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
-}
-
-export function setAuthToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, token);
-}
-
-export function clearAuthToken(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
 }
 
 // ============================================

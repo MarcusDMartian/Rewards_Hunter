@@ -33,7 +33,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleEmailSubmit = (e: React.FormEvent) => {
+    const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
@@ -42,16 +42,23 @@ const Login: React.FC = () => {
             return;
         }
 
-        const result = checkDomain(email);
+        setIsLoading(true);
+        try {
+            const result = await checkDomain(email);
 
-        if (!result.exists) {
-            setStep('register-org');
-        } else if (result.userExists) {
-            setOrganization(result.organization || null);
-            setStep('login');
-        } else {
-            setOrganization(result.organization || null);
-            setStep('join-request');
+            if (!result.exists) {
+                setStep('register-org');
+            } else if (result.userExists) {
+                setOrganization(result.organization || null);
+                setStep('login');
+            } else {
+                setOrganization(result.organization || null);
+                setStep('join-request');
+            }
+        } catch {
+            setError('Failed to check email domain');
+        } finally {
+            setIsLoading(false);
         }
     };
 

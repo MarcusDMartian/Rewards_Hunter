@@ -24,7 +24,10 @@ export default function Rewards() {
     const [showHowToEarn, setShowHowToEarn] = useState(false);
 
     useEffect(() => {
-        setTransactions(getTransactions());
+        const loadData = async () => {
+            setTransactions(await getTransactions());
+        };
+        loadData();
     }, []);
 
     const handleRedeemClick = (reward: Reward) => {
@@ -32,9 +35,9 @@ export default function Rewards() {
         setIsModalOpen(true);
     };
 
-    const handleRedeemSuccess = () => {
+    const handleRedeemSuccess = async () => {
         setUser(getCurrentUser());
-        setTransactions(getTransactions());
+        setTransactions(await getTransactions());
     };
 
     const getTypeColor = (type: string) => {

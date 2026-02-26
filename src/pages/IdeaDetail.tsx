@@ -15,8 +15,8 @@ import {
     CheckCircle,
     AlertCircle,
 } from 'lucide-react';
-import { KaizenIdea, Comment } from '../types';
-import { getIdeas, toggleVote, toggleFollow, addComment, getCurrentUser } from '../services/storageService';
+import { KaizenIdea } from '../types';
+import { getIdeaById, toggleVote, toggleFollow, addComment, getCurrentUser } from '../services/storageService';
 
 export default function IdeaDetail() {
     const { id } = useParams<{ id: string }>();
@@ -29,9 +29,8 @@ export default function IdeaDetail() {
         loadIdea();
     }, [id]);
 
-    const loadIdea = () => {
-        const ideas = getIdeas();
-        const found = ideas.find((i) => i.id === id);
+    const loadIdea = async () => {
+        const found = await getIdeaById(id || '');
         setIdea(found || null);
     };
 
@@ -56,30 +55,21 @@ export default function IdeaDetail() {
     const hasVoted = idea.votedBy.includes(user.id);
     const isFollowing = idea.followers.includes(user.id);
 
-    const handleVote = () => {
-        toggleVote(idea.id, user.id);
+    const handleVote = async () => {
+        await toggleVote(idea.id, user.id);
         loadIdea();
     };
 
-    const handleFollow = () => {
-        toggleFollow(idea.id, user.id);
+    const handleFollow = async () => {
+        await toggleFollow(idea.id, user.id);
         loadIdea();
     };
 
-    const handleAddComment = (e: React.FormEvent) => {
+    const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentText.trim()) return;
 
-        const newComment: Comment = {
-            id: `c_${Date.now()}`,
-            userId: user.id,
-            userName: user.name,
-            userAvatar: user.avatar,
-            text: commentText.trim(),
-            createdAt: new Date().toISOString(),
-        };
-
-        addComment(idea.id, newComment);
+        await addComment(idea.id, { text: commentText.trim() });
         setCommentText('');
         loadIdea();
     };

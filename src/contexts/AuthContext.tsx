@@ -11,8 +11,8 @@ interface AuthContextType extends AuthState {
     logout: () => void;
     registerOrganization: (data: { email: string; password: string; name: string; orgName: string }) => Promise<{ success: boolean; error?: string }>;
     submitJoinRequest: (data: { email: string; password: string; name: string; orgId: string }) => Promise<{ success: boolean; error?: string }>;
-    checkDomain: (email: string) => { exists: boolean; organization?: Organization; userExists?: boolean };
-    refreshAuth: () => void;
+    checkDomain: (email: string) => Promise<{ exists: boolean; organization?: Organization; userExists?: boolean }>;
+    refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,29 +35,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Initialize auth state from localStorage
+    // Initialize auth state — restore session from JWT token
     useEffect(() => {
-        const user = authService.getCurrentUser();
-        const org = authService.getCurrentOrganization();
+        const restoreSession = async () => {
+            try {
+                const { user, organization: org } = await authService.fetchCurrentUser();
+                if (user) {
+                    setCurrentUser(user);
+                    setOrganization(org);
+                    setIsAuthenticated(true);
+                }
+            } catch {
+                // Token invalid or expired, stay logged out
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-        if (user) {
-            setCurrentUser(user);
-            setOrganization(org);
-            setIsAuthenticated(true);
-        }
-
-        setIsLoading(false);
+        restoreSession();
     }, []);
 
-    const refreshAuth = () => {
-        const user = authService.getCurrentUser();
-        const org = authService.getCurrentOrganization();
-
-        if (user) {
-            setCurrentUser(user);
-            setOrganization(org);
-            setIsAuthenticated(true);
-        } else {
+    const refreshAuth = async () => {
+        try {
+            const { user, organization: org } = await authService.fetchCurrentUser();
+            if (user) {
+                setCurrentUser(user);
+                setOrganization(org);
+                setIsAuthenticated(true);
+            } else {
+                setCurrentUser(null);
+                setOrganization(null);
+                setIsAuthenticated(false);
+            }
+        } catch {
             setCurrentUser(null);
             setOrganization(null);
             setIsAuthenticated(false);
@@ -65,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const login = async (email: string, password: string) => {
-        const result = authService.login({ email, password });
+        const result = await authService.login({ email, password });
 
         if (result.success && result.user) {
             setCurrentUser(result.user);
@@ -85,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const registerOrganization = async (data: { email: string; password: string; name: string; orgName: string }) => {
-        const result = authService.registerOrganization(data);
+        const result = await authService.registerOrganization(data);
 
         if (result.success && result.user) {
             setCurrentUser(result.user);
@@ -101,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return authService.submitJoinRequest(data);
     };
 
-    const checkDomain = (email: string) => {
+    const checkDomain = async (email: string) => {
         return authService.checkDomain(email);
     };
 

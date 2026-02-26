@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 import { Target, Plus, Trash2 } from 'lucide-react';
 import { Mission } from '../../types';
 import { ManagementTabProps } from './managementTypes';
-import { saveMissions } from '../../services/storageService';
 
 const ManagementMissionsTab: React.FC<ManagementTabProps> = ({ missions, setMissions }) => {
     const [showForm, setShowForm] = useState(false);
@@ -27,7 +26,7 @@ const ManagementMissionsTab: React.FC<ManagementTabProps> = ({ missions, setMiss
         };
         const updated = [...missions, m];
         setMissions(updated);
-        saveMissions(updated);
+        // TODO: API call to create mission on backend
         setNewMission({ title: '', type: 'daily', total: 1, reward: 10 });
         setShowForm(false);
     };
@@ -35,7 +34,7 @@ const ManagementMissionsTab: React.FC<ManagementTabProps> = ({ missions, setMiss
     const handleDelete = (missionId: string) => {
         const updated = missions.filter(m => m.id !== missionId);
         setMissions(updated);
-        saveMissions(updated);
+        // TODO: API call to delete mission on backend
     };
 
     return (

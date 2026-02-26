@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -16,7 +16,7 @@ datasource db {
 // ============================================
 
 model Organization {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   domain    String   @unique
   createdAt DateTime @default(now())
@@ -28,12 +28,12 @@ model Organization {
 }
 
 model Team {
-  id           String  @id @default(uuid())
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
   name         String
-  parentTeamId String?
-  orgId        String
+  parentTeamId String? @db.ObjectId
+  orgId        String  @db.ObjectId
 
-  parentTeam Team?  @relation("TeamHierarchy", fields: [parentTeamId], references: [id])
+  parentTeam Team?  @relation("TeamHierarchy", fields: [parentTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   childTeams Team[] @relation("TeamHierarchy")
 
   organization Organization @relation(fields: [orgId], references: [id])
@@ -43,24 +43,24 @@ model Team {
 }
 
 model User {
-  id             String  @id @default(uuid())
-  email          String  @unique
-  passwordHash   String
-  name           String
-  avatar         String  @default("")
-  role           String  @default("Member") // Member, Leader, Admin, Superadmin, SystemAdmin
-  position       String  @default("Team Member")
-  points         Int     @default(0)
-  monthlyPoints  Int     @default(0)
-  quarterlyPoints Int    @default(0)
-  level          Int     @default(1)
-  nextLevelPoints Int    @default(100)
-  streak         Int     @default(0)
-  lastActiveDate String? // ISO date string for streak tracking
-  isActive       Boolean @default(true)
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  email           String  @unique
+  passwordHash    String
+  name            String
+  avatar          String  @default("")
+  role            String  @default("Member")
+  position        String  @default("Team Member")
+  points          Int     @default(0)
+  monthlyPoints   Int     @default(0)
+  quarterlyPoints Int     @default(0)
+  level           Int     @default(1)
+  nextLevelPoints Int     @default(100)
+  streak          Int     @default(0)
+  lastActiveDate  String?
+  isActive        Boolean @default(true)
 
-  teamId String?
-  orgId  String?
+  teamId String? @db.ObjectId
+  orgId  String? @db.ObjectId
 
   team         Team?         @relation(fields: [teamId], references: [id])
   organization Organization? @relation(fields: [orgId], references: [id])
@@ -69,27 +69,27 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  kaizenIdeas      KaizenIdea[]
-  kaizenVotes      KaizenVote[]
-  kaizenComments   KaizenComment[]
-  kaizenFollows    KaizenFollow[]
-  kudosSent        Kudos[]            @relation("KudosSender")
-  kudosReceived    Kudos[]            @relation("KudosReceiver")
-  kudosLikes       KudosLike[]
-  pointTransactions PointTransaction[]
+  kaizenIdeas        KaizenIdea[]
+  kaizenVotes        KaizenVote[]
+  kaizenComments     KaizenComment[]
+  kaizenFollows      KaizenFollow[]
+  kudosSent          Kudos[]              @relation("KudosSender")
+  kudosReceived      Kudos[]              @relation("KudosReceiver")
+  kudosLikes         KudosLike[]
+  pointTransactions  PointTransaction[]
   redemptionRequests RedemptionRequest[]
-  userBadges       UserBadge[]
-  userMissions     UserMission[]
-  feedbackIdentity FeedbackIdentityMap[]
+  userBadges         UserBadge[]
+  userMissions       UserMission[]
+  feedbackIdentity   FeedbackIdentityMap[]
 }
 
 model JoinRequest {
-  id           String   @id @default(uuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   email        String
   name         String
   passwordHash String
-  orgId        String
-  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  orgId        String   @db.ObjectId
+  status       String   @default("PENDING")
   createdAt    DateTime @default(now())
 
   organization Organization @relation(fields: [orgId], references: [id])
@@ -100,16 +100,16 @@ model JoinRequest {
 // ============================================
 
 model KaizenIdea {
-  id         String   @id @default(uuid())
-  title      String
-  problem    String
-  proposal   String
-  impact     String   // Cost, Quality, Speed, Safety
-  status     String   @default("New") // New, In Review, Approved, Implemented, Rejected
-  creatorId  String
-  teamId     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  problem   String
+  proposal  String
+  impact    String
+  status    String   @default("New")
+  creatorId String   @db.ObjectId
+  teamId    String?  @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   creator  User            @relation(fields: [creatorId], references: [id])
   votes    KaizenVote[]
@@ -118,35 +118,35 @@ model KaizenIdea {
 }
 
 model KaizenVote {
-  id        String   @id @default(uuid())
-  ideaId    String
-  voterId   String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  ideaId    String   @db.ObjectId
+  voterId   String   @db.ObjectId
   createdAt DateTime @default(now())
 
-  idea  KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  idea  KaizenIdea @relation(fields: [ideaId], references: [id])
   voter User       @relation(fields: [voterId], references: [id])
 
   @@unique([ideaId, voterId])
 }
 
 model KaizenComment {
-  id        String   @id @default(uuid())
-  ideaId    String
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  ideaId    String   @db.ObjectId
+  userId    String   @db.ObjectId
   text      String
   createdAt DateTime @default(now())
 
-  idea KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  idea KaizenIdea @relation(fields: [ideaId], references: [id])
   user User       @relation(fields: [userId], references: [id])
 }
 
 model KaizenFollow {
-  id        String   @id @default(uuid())
-  ideaId    String
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  ideaId    String   @db.ObjectId
+  userId    String   @db.ObjectId
   createdAt DateTime @default(now())
 
-  idea KaizenIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  idea KaizenIdea @relation(fields: [ideaId], references: [id])
   user User       @relation(fields: [userId], references: [id])
 
   @@unique([ideaId, userId])
@@ -157,10 +157,10 @@ model KaizenFollow {
 // ============================================
 
 model Kudos {
-  id         String   @id @default(uuid())
-  senderId   String
-  receiverId String
-  coreValue  String   // Kaizen, Collaboration, Ownership, Customer First
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiverId String   @db.ObjectId
+  coreValue  String
   message    String
   createdAt  DateTime @default(now())
 
@@ -170,12 +170,12 @@ model Kudos {
 }
 
 model KudosLike {
-  id        String   @id @default(uuid())
-  kudosId   String
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  kudosId   String   @db.ObjectId
+  userId    String   @db.ObjectId
   createdAt DateTime @default(now())
 
-  kudos Kudos @relation(fields: [kudosId], references: [id], onDelete: Cascade)
+  kudos Kudos @relation(fields: [kudosId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
 
   @@unique([kudosId, userId])
@@ -186,14 +186,14 @@ model KudosLike {
 // ============================================
 
 model Reward {
-  id          String  @id @default(uuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  description String  @default("")
-  image       String  @default("")
+  description String   @default("")
+  image       String   @default("")
   cost        Int
-  type        String  // Voucher, DayOff, Merch
-  stock       Int     @default(0)
-  isActive    Boolean @default(true)
+  type        String
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -201,11 +201,11 @@ model Reward {
 }
 
 model PointTransaction {
-  id          String   @id @default(uuid())
-  userId      String
-  amount      Int      // positive = earn, negative = spend
-  type        String   // earn, spend
-  source      String   // idea_created, idea_approved, kudos_sent, kudos_received, redeem, mission_completed, streak_bonus, admin_adjust
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  amount      Int
+  type        String
+  source      String
   referenceId String?
   description String   @default("")
   createdAt   DateTime @default(now())
@@ -214,15 +214,15 @@ model PointTransaction {
 }
 
 model RedemptionRequest {
-  id          String   @id @default(uuid())
-  userId      String
-  rewardId    String
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  rewardId    String    @db.ObjectId
   rewardName  String
   pointsCost  Int
-  status      String   @default("Pending") // Pending, Approved, Rejected, Fulfilled
+  status      String    @default("Pending")
   note        String?
   processedBy String?
-  requestedAt DateTime @default(now())
+  requestedAt DateTime  @default(now())
   processedAt DateTime?
 
   user   User   @relation(fields: [userId], references: [id])
@@ -234,20 +234,20 @@ model RedemptionRequest {
 // ============================================
 
 model Badge {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  icon        String  @default("🏆")
-  color       String  @default("bg-indigo-100")
-  description String  @default("")
-  criteriaJson String @default("{}") // JSON string
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  name         String @unique
+  icon         String @default("🏆")
+  color        String @default("bg-indigo-100")
+  description  String @default("")
+  criteriaJson String @default("{}")
 
   userBadges UserBadge[]
 }
 
 model UserBadge {
-  id        String   @id @default(uuid())
-  userId    String
-  badgeId   String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  badgeId   String   @db.ObjectId
   awardedAt DateTime @default(now())
   reason    String   @default("")
 
@@ -258,14 +258,14 @@ model UserBadge {
 }
 
 model Mission {
-  id           String  @id @default(uuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   title        String
-  description  String  @default("")
-  type         String  @default("daily") // daily, weekly
-  triggerEvent String  @default("") // idea_created, kudos_sent, daily_login, etc.
-  targetCount  Int     @default(1)
-  rewardPoints Int     @default(10)
-  isActive     Boolean @default(true)
+  description  String   @default("")
+  type         String   @default("daily")
+  triggerEvent String   @default("")
+  targetCount  Int      @default(1)
+  rewardPoints Int      @default(10)
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -273,9 +273,9 @@ model Mission {
 }
 
 model UserMission {
-  id          String   @id @default(uuid())
-  userId      String
-  missionId   String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  missionId   String   @db.ObjectId
   progress    Int      @default(0)
   completed   Boolean  @default(false)
   claimed     Boolean  @default(false)
@@ -294,32 +294,32 @@ model UserMission {
 // ============================================
 
 model FeedbackTemplate {
-  id       String  @id @default(uuid())
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
   name     String
-  type     String  // start_stop_continue, nps, four_l, open
+  type     String
   isActive Boolean @default(true)
 
   entries FeedbackEntry[]
 }
 
 model FeedbackEntry {
-  id         String   @id @default(uuid())
-  templateId String
-  targetType String   // user, team, company
-  targetId   String?
-  contentJson String  @default("{}") // JSON
-  score      Int?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  templateId  String   @db.ObjectId
+  targetType  String
+  targetId    String?
+  contentJson String   @default("{}")
+  score       Int?
+  createdAt   DateTime @default(now())
 
-  template FeedbackTemplate @relation(fields: [templateId], references: [id])
+  template    FeedbackTemplate     @relation(fields: [templateId], references: [id])
   identityMap FeedbackIdentityMap?
 }
 
 model FeedbackIdentityMap {
-  id         String @id @default(uuid())
-  feedbackId String @unique
-  userId     String
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  feedbackId String @unique @db.ObjectId
+  userId     String @db.ObjectId
 
-  feedback FeedbackEntry @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  feedback FeedbackEntry @relation(fields: [feedbackId], references: [id])
   user     User          @relation(fields: [userId], references: [id])
 }

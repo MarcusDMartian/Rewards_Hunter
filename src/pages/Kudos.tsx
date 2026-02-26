@@ -6,16 +6,15 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Heart,
-    Sparkles,
     Send,
     Loader2,
     UserPlus,
     ArrowRight,
 } from 'lucide-react';
 import { Kudos as KudosType, User } from '../types';
-import { getKudos, addKudos, toggleKudosLike, getCurrentUser, updateUserPoints, addTransaction } from '../services/storageService';
+import { getKudos, addKudos, toggleKudosLike, getCurrentUser } from '../services/storageService';
 import { processGameEvent } from '../services/gamificationService';
-import { generateRefinedText, isAIAvailable } from '../services/geminiService';
+
 import { CORE_VALUES } from '../constants';
 import UserSelectModal from '../components/UserSelectModal';
 import Pagination from '../components/Pagination';
@@ -39,78 +38,55 @@ export default function Kudos() {
     const [coreValue, setCoreValue] = useState<KudosType['coreValue']>('Kaizen');
     const [message, setMessage] = useState('');
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [isPolishing, setIsPolishing] = useState(false);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         loadKudos();
     }, []);
 
-    const loadKudos = () => {
-        setKudosList(getKudos());
+    const loadKudos = async () => {
+        const data = await getKudos();
+        setKudosList(data);
     };
 
-    const handleLike = (kudosId: string) => {
-        toggleKudosLike(kudosId, user.id);
+    const handleLike = async (kudosId: string) => {
+        await toggleKudosLike(kudosId, user.id);
         loadKudos();
     };
 
-    const handlePolish = async () => {
-        if (!message.trim()) return;
-        setIsPolishing(true);
-        try {
-            const polished = await generateRefinedText(message, 'kudos');
-            setMessage(polished);
-        } finally {
-            setIsPolishing(false);
-        }
-    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser || !message.trim()) return;
 
         setIsSubmitting(true);
-        await new Promise((r) => setTimeout(r, 500));
 
-        const newKudos: KudosType = {
-            id: `k_${Date.now()}`,
-            sender: user,
-            receiver: selectedUser,
-            coreValue,
-            message: message.trim(),
-            createdAt: new Date().toISOString(),
-            likes: 0,
-            likedBy: [],
-        };
+        try {
+            await addKudos({
+                receiverId: selectedUser.id,
+                coreValue,
+                message: message.trim(),
+            });
 
-        addKudos(newKudos);
+            // Auto-trigger gamification
+            await processGameEvent('kudos_sent');
 
-        // Award points
-        updateUserPoints(10); // Sender gets points
-        addTransaction({
-            id: `pt_${Date.now()}`,
-            userId: user.id,
-            description: `Sent kudos to ${selectedUser.name}`,
-            amount: 10,
-            type: 'earn',
-            source: 'kudos_sent',
-            referenceId: newKudos.id,
-            date: new Date().toISOString(),
-        });
+            addToast(`❤️ Kudos sent to ${selectedUser.name}! +10 pts`, 'success');
 
-        // Auto-trigger gamification
-        processGameEvent('kudos_sent');
-
-        addToast(`❤️ Kudos sent to ${selectedUser.name}! +10 pts`, 'success');
-
-        // Reset form
-        setSelectedUser(null);
-        setCoreValue('Kaizen');
-        setMessage('');
-        setIsSubmitting(false);
-        loadKudos();
-        setActiveTab('wall');
+            // Reset form
+            setSelectedUser(null);
+            setCoreValue('Kaizen');
+            setMessage('');
+            setIsSubmitting(false);
+            loadKudos();
+            setActiveTab('wall');
+        } catch (err) {
+            addToast('Failed to send kudos', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Filter and paginate kudos
@@ -241,26 +217,9 @@ export default function Kudos() {
 
                         {/* Message */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Message
-                                </label>
-                                {isAIAvailable() && (
-                                    <button
-                                        type="button"
-                                        onClick={handlePolish}
-                                        disabled={isPolishing || !message.trim()}
-                                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                    >
-                                        {isPolishing ? (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                            <Sparkles className="w-3 h-3" />
-                                        )}
-                                        AI Polish
-                                    </button>
-                                )}
-                            </div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Message
+                            </label>
                             <textarea
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Organization, User, KaizenIdea, RedemptionRequest, Reward } from '../types';
 import * as authService from '../services/authService';
-import { getIdeas, updateIdea, getRedemptions, saveRedemptions } from '../services/storageService';
+import { getIdeas, updateIdea, getRedemptions } from '../services/storageService';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Sub-components
@@ -49,26 +49,36 @@ const Console: React.FC = () => {
 
     useEffect(() => { loadData(); }, []);
 
-    const loadData = () => {
+    const loadData = async () => {
         setIsLoading(true);
-        setOrganizations(authService.getAllOrganizations().filter(o => o.id !== 'platform'));
-        setAllUsers(authService.getAllUsers().filter(u => u.role !== 'SystemAdmin'));
-        setAllIdeas(getIdeas());
-        setRedemptions(getRedemptions());
-        setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
-        setStats(authService.getPlatformStats());
-        setIsLoading(false);
+        try {
+            const [orgs, users, statsData] = await Promise.all([
+                authService.getAllOrganizations(),
+                authService.getAllUsers(),
+                authService.getPlatformStats(),
+            ]);
+            setOrganizations(orgs.filter(o => o.id !== 'platform'));
+            setAllUsers(users.filter(u => u.role !== 'SystemAdmin'));
+            setAllIdeas(await getIdeas());
+            setRedemptions(await getRedemptions());
+            setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
+            setStats(statsData);
+        } catch (err) {
+            console.error('Failed to load console data:', err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleIdeaAction = (ideaId: string, status: 'Approved' | 'Rejected') => {
-        updateIdea(ideaId, { status });
-        setAllIdeas(getIdeas());
+    const handleIdeaAction = async (ideaId: string, status: 'Approved' | 'Rejected') => {
+        await updateIdea(ideaId, { status });
+        setAllIdeas(await getIdeas());
     };
 
     const handleRedemptionAction = (redId: string, status: 'Approved' | 'Rejected') => {
         const updated = redemptions.map(r => r.id === redId ? { ...r, status: status as RedemptionRequest['status'], processedAt: new Date().toISOString() } : r);
         setRedemptions(updated);
-        saveRedemptions(updated);
+        // TODO: API call to process redemption on backend
     };
 
     const toggleFeature = (name: string) => {

@@ -4,6 +4,7 @@
 
 export const STORAGE_KEYS = {
     // Auth & Users
+    AUTH_TOKEN: 'rh_auth_token',
     USERS: 'rh_users',
     CURRENT_USER: 'rh_current_user',
     AUTH_SESSION: 'rh_auth_session',

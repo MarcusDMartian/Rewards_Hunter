@@ -22,18 +22,25 @@ import { Mission, KaizenIdea } from '../types';
 export default function Dashboard() {
     usePageTitle('Dashboard');
     const [user, setUser] = useState(getCurrentUser());
-    const [missions, setMissions] = useState<Mission[]>(getMissions());
+    const [missions, setMissions] = useState<Mission[]>([]);
     const [recentIdeas, setRecentIdeas] = useState<KaizenIdea[]>([]);
 
     useEffect(() => {
-        const ideas = getIdeas().slice(0, 3);
-        setRecentIdeas(ideas);
-        // Auto-trigger daily login for streak tracking
-        processGameEvent('daily_login');
+        const loadData = async () => {
+            const [fetchedMissions, fetchedIdeas] = await Promise.all([
+                getMissions(),
+                getIdeas(),
+            ]);
+            setMissions(fetchedMissions);
+            setRecentIdeas(fetchedIdeas.slice(0, 3));
+            // Auto-trigger daily login for streak tracking
+            await processGameEvent('daily_login');
+        };
+        loadData();
     }, []);
 
-    const handleClaimMission = (missionId: string) => {
-        const { missions: updatedMissions } = claimMission(missionId);
+    const handleClaimMission = async (missionId: string) => {
+        const { missions: updatedMissions } = await claimMission(missionId);
         setMissions(updatedMissions);
         setUser(getCurrentUser());
     };

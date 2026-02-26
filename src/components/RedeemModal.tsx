@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { X, Gift, AlertCircle, CheckCircle } from 'lucide-react';
 import { Reward } from '../types';
-import { getCurrentUser, updateUserPoints, addTransaction, addRedemption } from '../services/storageService';
+import { getCurrentUser, addRedemption } from '../services/storageService';
 
 interface RedeemModalProps {
     isOpen: boolean;
@@ -39,31 +39,8 @@ export default function RedeemModal({
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
-            // Deduct points
-            updateUserPoints(-reward.cost);
-
-            // Add transaction
-            addTransaction({
-                id: `pt_${Date.now()}`,
-                userId: user.id,
-                description: `Redeemed: ${reward.name}`,
-                amount: -reward.cost,
-                type: 'spend',
-                source: 'redeem',
-                referenceId: reward.id,
-                date: new Date().toISOString(),
-            });
-
-            // Add redemption request
-            addRedemption({
-                id: `red_${Date.now()}`,
-                userId: user.id,
-                rewardId: reward.id,
-                rewardName: reward.name,
-                pointsCost: reward.cost,
-                status: 'Pending',
-                requestedAt: new Date().toISOString(),
-            });
+            // Submit redemption via API (server handles points deduction)
+            await addRedemption(reward.id);
 
             setStatus('success');
             setTimeout(() => {
@@ -165,8 +142,8 @@ export default function RedeemModal({
                                     onClick={handleRedeem}
                                     disabled={!canRedeem}
                                     className={`flex-1 px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all ${canRedeem
-                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/30'
-                                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/30'
+                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
                                         }`}
                                 >
                                     <Gift className="w-4 h-4" />

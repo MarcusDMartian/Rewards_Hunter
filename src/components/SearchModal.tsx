@@ -33,25 +33,29 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
         }
     }, [isOpen]);
 
-    const search = useCallback((q: string) => {
+    const search = useCallback(async (q: string) => {
         if (!q.trim()) { setResults([]); return; }
         const lower = q.toLowerCase();
         const found: SearchResult[] = [];
 
         // Search ideas
-        const ideas: KaizenIdea[] = getIdeas();
+        const ideas: KaizenIdea[] = await getIdeas();
         ideas.filter(i => i.title.toLowerCase().includes(lower) || i.problem.toLowerCase().includes(lower))
             .slice(0, 5)
             .forEach(i => found.push({ type: 'idea', id: i.id, title: i.title, subtitle: `${i.status} • ${i.author.name}`, path: `/ideas/${i.id}` }));
 
         // Search users
-        const users: UserType[] = authService.getAllUsers();
-        users.filter(u => u.name.toLowerCase().includes(lower) || u.email.toLowerCase().includes(lower))
-            .slice(0, 5)
-            .forEach(u => found.push({ type: 'user', id: u.id, title: u.name, subtitle: `${u.email} • ${u.team}`, path: '/leaderboard' }));
+        try {
+            const users: UserType[] = await authService.getAllUsers();
+            users.filter(u => u.name.toLowerCase().includes(lower) || u.email.toLowerCase().includes(lower))
+                .slice(0, 5)
+                .forEach(u => found.push({ type: 'user', id: u.id, title: u.name, subtitle: `${u.email} • ${u.team}`, path: '/leaderboard' }));
+        } catch {
+            // silently skip user search if API fails
+        }
 
         // Search kudos
-        const kudos: Kudos[] = getKudos();
+        const kudos: Kudos[] = await getKudos();
         kudos.filter(k => k.message.toLowerCase().includes(lower) || k.sender.name.toLowerCase().includes(lower))
             .slice(0, 3)
             .forEach(k => found.push({ type: 'kudos', id: k.id, title: `${k.sender.name} → ${k.receiver.name}`, subtitle: k.message.slice(0, 60), path: '/kudos' }));
@@ -61,7 +65,7 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => search(query), 150);
+        const timer = setTimeout(() => { search(query); }, 150);
         return () => clearTimeout(timer);
     }, [query, search]);
 

@@ -43,29 +43,38 @@ const Management: React.FC = () => {
 
     useEffect(() => { loadData(); }, [organization]);
 
-    const loadData = () => {
+    const loadData = async () => {
         setIsLoading(true);
-        if (organization) {
-            setJoinRequests(authService.getOrgJoinRequests(organization.id));
-            setMembers(authService.getUsersByOrg(organization.id).filter(u => u.id !== currentUser?.id));
+        try {
+            if (organization) {
+                const [requests, orgUsers] = await Promise.all([
+                    authService.getOrgJoinRequests(organization.id),
+                    authService.getUsersByOrg(organization.id),
+                ]);
+                setJoinRequests(requests);
+                setMembers(orgUsers.filter(u => u.id !== currentUser?.id));
+            }
+            setMissions(await storageService.getMissions());
+            setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
+            setBadges(storageService.getCurrentUser().badges || []);
+            setRedemptions(await storageService.getRedemptions());
+        } catch (err) {
+            console.error('Failed to load management data:', err);
+        } finally {
+            setIsLoading(false);
         }
-        setMissions(storageService.getMissions());
-        setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
-        setBadges(storageService.getCurrentUser().badges || []);
-        setRedemptions(storageService.getRedemptions());
-        setIsLoading(false);
     };
 
     const handleApprove = async (requestId: string) => {
         setActionLoading(requestId);
-        const result = authService.approveJoinRequest(requestId);
+        const result = await authService.approveJoinRequest(requestId);
         if (result.success) loadData();
         setActionLoading(null);
     };
 
     const handleReject = async (requestId: string) => {
         setActionLoading(requestId);
-        const result = authService.rejectJoinRequest(requestId);
+        const result = await authService.rejectJoinRequest(requestId);
         if (result.success) loadData();
         setActionLoading(null);
     };

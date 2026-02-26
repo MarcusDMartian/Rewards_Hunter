@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 import { Gift, Clock, Plus, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { Reward, RedemptionRequest } from '../../types';
 import { ManagementTabProps } from './managementTypes';
-import { saveRedemptions } from '../../services/storageService';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setRewards, redemptions, setRedemptions }) => {
@@ -36,7 +35,7 @@ const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setReward
                 : red
         );
         setRedemptions(updated);
-        saveRedemptions(updated);
+        // TODO: API call to process redemption on backend
     };
 
     return (

@@ -8,15 +8,14 @@ import {
     Lightbulb,
     ChevronUp,
     MessageCircle,
-    Sparkles,
     Send,
     Loader2,
     Filter,
 } from 'lucide-react';
 import { KaizenIdea } from '../types';
-import { getIdeas, addIdea, toggleVote, getCurrentUser, updateUserPoints, addTransaction } from '../services/storageService';
+import { getIdeas, addIdea, toggleVote, getCurrentUser } from '../services/storageService';
 import { processGameEvent } from '../services/gamificationService';
-import { generateRefinedText, isAIAvailable } from '../services/geminiService';
+
 import { IMPACT_TYPES } from '../constants';
 import Pagination from '../components/Pagination';
 import { useToast } from '../contexts/ToastContext';
@@ -42,7 +41,7 @@ export default function KaizenIdeas() {
     const [problem, setProblem] = useState('');
     const [proposal, setProposal] = useState('');
     const [impact, setImpact] = useState<'Cost' | 'Quality' | 'Speed' | 'Safety'>('Speed');
-    const [isPolishing, setIsPolishing] = useState<'problem' | 'proposal' | null>(null);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -50,8 +49,9 @@ export default function KaizenIdeas() {
         loadIdeas();
     }, []);
 
-    const loadIdeas = () => {
-        setIdeas(getIdeas());
+    const loadIdeas = async () => {
+        const data = await getIdeas();
+        setIdeas(data);
     };
 
     const handleTabChange = (tab: 'browse' | 'create') => {
@@ -59,27 +59,12 @@ export default function KaizenIdeas() {
         setSearchParams(tab === 'create' ? { tab: 'create' } : {});
     };
 
-    const handleVote = (ideaId: string) => {
-        toggleVote(ideaId, user.id);
+    const handleVote = async (ideaId: string) => {
+        await toggleVote(ideaId, user.id);
         loadIdeas();
     };
 
-    const handlePolish = async (field: 'problem' | 'proposal') => {
-        const text = field === 'problem' ? problem : proposal;
-        if (!text.trim()) return;
 
-        setIsPolishing(field);
-        try {
-            const polished = await generateRefinedText(text, 'kaizen');
-            if (field === 'problem') {
-                setProblem(polished);
-            } else {
-                setProposal(polished);
-            }
-        } finally {
-            setIsPolishing(null);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,52 +78,27 @@ export default function KaizenIdeas() {
 
         setIsSubmitting(true);
 
-        // Simulate delay
-        await new Promise((r) => setTimeout(r, 500));
+        try {
+            await addIdea({ title: title.trim(), problem: problem.trim(), proposal: proposal.trim(), impact });
 
-        const newIdea: KaizenIdea = {
-            id: `i_${Date.now()}`,
-            title: title.trim(),
-            problem: problem.trim(),
-            proposal: proposal.trim(),
-            impact,
-            status: 'New',
-            votes: 0,
-            votedBy: [],
-            author: user,
-            teamId: user.teamId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            comments: [],
-            followers: [],
-        };
+            // Auto-trigger gamification
+            await processGameEvent('idea_created');
 
-        addIdea(newIdea);
-        updateUserPoints(50);
-        addTransaction({
-            id: `pt_${Date.now()}`,
-            userId: user.id,
-            description: 'Submitted Kaizen idea',
-            amount: 50,
-            type: 'earn',
-            source: 'idea_created',
-            referenceId: newIdea.id,
-            date: new Date().toISOString(),
-        });
+            addToast('💡 Idea submitted successfully! +50 pts', 'success');
 
-        // Auto-trigger gamification
-        processGameEvent('idea_created');
-
-        addToast('💡 Idea submitted successfully! +50 pts', 'success');
-
-        // Reset form
-        setTitle('');
-        setProblem('');
-        setProposal('');
-        setImpact('Speed');
-        setIsSubmitting(false);
-        loadIdeas();
-        handleTabChange('browse');
+            // Reset form
+            setTitle('');
+            setProblem('');
+            setProposal('');
+            setImpact('Speed');
+            setIsSubmitting(false);
+            loadIdeas();
+            handleTabChange('browse');
+        } catch (err) {
+            addToast('Failed to submit idea', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Filter and paginate ideas
@@ -397,26 +357,9 @@ export default function KaizenIdeas() {
 
                     {/* Problem */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Problem *
-                            </label>
-                            {isAIAvailable() && (
-                                <button
-                                    type="button"
-                                    onClick={() => handlePolish('problem')}
-                                    disabled={isPolishing === 'problem' || !problem.trim()}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    {isPolishing === 'problem' ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="w-3 h-3" />
-                                    )}
-                                    AI Polish
-                                </button>
-                            )}
-                        </div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Problem *
+                        </label>
                         <textarea
                             value={problem}
                             onChange={(e) => setProblem(e.target.value)}
@@ -429,26 +372,9 @@ export default function KaizenIdeas() {
 
                     {/* Proposal */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Proposal *
-                            </label>
-                            {isAIAvailable() && (
-                                <button
-                                    type="button"
-                                    onClick={() => handlePolish('proposal')}
-                                    disabled={isPolishing === 'proposal' || !proposal.trim()}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    {isPolishing === 'proposal' ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="w-3 h-3" />
-                                    )}
-                                    AI Polish
-                                </button>
-                            )}
-                        </div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Proposal *
+                        </label>
                         <textarea
                             value={proposal}
                             onChange={(e) => setProposal(e.target.value)}
