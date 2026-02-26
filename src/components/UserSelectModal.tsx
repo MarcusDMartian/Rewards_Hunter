@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_USERS } from '../constants';
+import { MOCK_USERS } from '../data/mockData';
 import { getCurrentUser } from '../services/storageService';
 
 interface UserSelectModalProps {

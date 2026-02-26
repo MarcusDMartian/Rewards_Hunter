@@ -11,21 +11,13 @@ import {
     RegisterOrgData,
     JoinRequestData
 } from '../types';
+import { ALL_BADGES } from '../constants';
 import {
     ALL_USERS,
     MOCK_ORGANIZATIONS,
     MOCK_JOIN_REQUESTS,
-    ALL_BADGES
-} from '../constants';
-
-// Storage keys
-const STORAGE_KEYS = {
-    AUTH_USER: 'reward_hunter_auth_user',
-    AUTH_ORG: 'reward_hunter_auth_org',
-    ORGANIZATIONS: 'reward_hunter_organizations',
-    JOIN_REQUESTS: 'reward_hunter_join_requests',
-    USERS: 'reward_hunter_users',
-};
+} from '../data/mockData';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Initialize mock data in localStorage if not exists
 const initializeMockData = () => {
@@ -134,7 +126,7 @@ export const login = (credentials: LoginCredentials): { success: boolean; user?:
     const org = user.orgId ? orgs.find(o => o.id === user.orgId) : undefined;
 
     // Save to localStorage
-    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
     if (org) {
         localStorage.setItem(STORAGE_KEYS.AUTH_ORG, JSON.stringify(org));
     }
@@ -196,7 +188,7 @@ export const registerOrganization = (data: RegisterOrgData): { success: boolean;
     saveUsers(users);
 
     // Auto login
-    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(newUser));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
     localStorage.setItem(STORAGE_KEYS.AUTH_ORG, JSON.stringify(newOrg));
 
     return { success: true, user: newUser, organization: newOrg };
@@ -317,7 +309,7 @@ export const rejectJoinRequest = (requestId: string): { success: boolean; error?
  * Logout current user
  */
 export const logout = (): void => {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     localStorage.removeItem(STORAGE_KEYS.AUTH_ORG);
 };
 
@@ -325,7 +317,7 @@ export const logout = (): void => {
  * Get current authenticated user
  */
 export const getCurrentUser = (): User | null => {
-    const data = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+    const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     return data ? JSON.parse(data) : null;
 };
 
@@ -383,7 +375,7 @@ export const updateUser = (userId: string, updates: Partial<User>): { success: b
     // Update current user if it's the same
     const currentUser = getCurrentUser();
     if (currentUser && currentUser.id === userId) {
-        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(users[index]));
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(users[index]));
     }
 
     return { success: true, user: users[index] };

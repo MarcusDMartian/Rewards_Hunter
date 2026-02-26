@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Trophy } from 'lucide-react';
-import { MOCK_USERS } from '../constants';
+import { MOCK_USERS } from '../data/mockData';
 import LeaderboardComponent from '../components/Leaderboard';
 
 type Period = 'month' | 'quarter' | 'all';
@@ -44,8 +44,8 @@ export default function LeaderboardPage() {
                 <button
                     onClick={() => setPeriod('month')}
                     className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'month'
-                            ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400'
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
                         }`}
                 >
                     This Month
@@ -53,8 +53,8 @@ export default function LeaderboardPage() {
                 <button
                     onClick={() => setPeriod('quarter')}
                     className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'quarter'
-                            ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400'
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
                         }`}
                 >
                     This Quarter
@@ -62,8 +62,8 @@ export default function LeaderboardPage() {
                 <button
                     onClick={() => setPeriod('all')}
                     className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'all'
-                            ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400'
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
                         }`}
                 >
                     All Time

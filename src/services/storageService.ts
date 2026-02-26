@@ -3,24 +3,14 @@
 // ============================================
 
 import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest } from '../types';
-import { CURRENT_USER, MOCK_IDEAS, MOCK_KUDOS, MOCK_MISSIONS, MOCK_TRANSACTIONS } from '../constants';
-
-const STORAGE_KEYS = {
-    USER: 'rh_user',
-    IDEAS: 'rh_ideas',
-    KUDOS: 'rh_kudos',
-    MISSIONS: 'rh_missions',
-    TRANSACTIONS: 'rh_transactions',
-    REDEMPTIONS: 'rh_redemptions',
-    ONBOARDING: 'rh_onboarding_complete',
-    AUTH: 'rh_auth_token',
-};
+import { CURRENT_USER, MOCK_IDEAS, MOCK_KUDOS, MOCK_MISSIONS, MOCK_TRANSACTIONS } from '../data/mockData';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // ============================================
 // USER
 // ============================================
 export function getCurrentUser(): User {
-    const stored = localStorage.getItem(STORAGE_KEYS.USER);
+    const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (stored) {
         try {
             return JSON.parse(stored);
@@ -32,7 +22,7 @@ export function getCurrentUser(): User {
 }
 
 export function saveCurrentUser(user: User): void {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
 }
 
 export function updateUserPoints(amount: number): User {
@@ -282,26 +272,26 @@ export function addRedemption(redemption: RedemptionRequest): RedemptionRequest[
 // ONBOARDING
 // ============================================
 export function isOnboardingComplete(): boolean {
-    return localStorage.getItem(STORAGE_KEYS.ONBOARDING) === 'true';
+    return localStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE) === 'true';
 }
 
 export function setOnboardingComplete(): void {
-    localStorage.setItem(STORAGE_KEYS.ONBOARDING, 'true');
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETE, 'true');
 }
 
 // ============================================
 // AUTH
 // ============================================
 export function getAuthToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH);
+    return localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
 }
 
 export function setAuthToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.AUTH, token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, token);
 }
 
 export function clearAuthToken(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
 }
 
 // ============================================

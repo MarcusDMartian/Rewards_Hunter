@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Reward, PointTransaction } from '../types';
 import { getCurrentUser, getTransactions } from '../services/storageService';
-import { MOCK_REWARDS } from '../constants';
+import { MOCK_REWARDS } from '../data/mockData';
 import RedeemModal from '../components/RedeemModal';
 
 export default function Rewards() {
@@ -165,8 +165,8 @@ export default function Rewards() {
                                             onClick={() => handleRedeemClick(reward)}
                                             disabled={!canAfford}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${canAfford
-                                                    ? 'bg-indigo-500 text-white hover:bg-indigo-600'
-                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                                ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+                                                : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
                                                 }`}
                                         >
                                             Redeem
@@ -198,8 +198,8 @@ export default function Rewards() {
                             >
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'earn'
-                                            ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                            : 'bg-slate-100 dark:bg-slate-800'
+                                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                        : 'bg-slate-100 dark:bg-slate-800'
                                         }`}
                                 >
                                     {tx.type === 'earn' ? (

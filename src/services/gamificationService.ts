@@ -6,19 +6,20 @@
 
 import { getMissions, saveMissions, getCurrentUser, saveCurrentUser } from './storageService';
 import { User } from '../types';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export type GameEvent = 'idea_created' | 'kudos_sent' | 'kudos_received' | 'daily_login' | 'idea_approved' | 'redeem';
 
 const BADGE_CRITERIA: Record<string, (user: User) => boolean> = {
     'First Idea': (u) => {
-        const ideas = JSON.parse(localStorage.getItem('rh_ideas') || '[]');
+        const ideas = JSON.parse(localStorage.getItem(STORAGE_KEYS.IDEAS) || '[]');
         return ideas.some((i: any) => i.author?.id === u.id);
     },
     'Early Bird': (u) => u.streak >= 3,
     'Star Player': (u) => u.points >= 500,
     'Champion': (u) => u.points >= 1000,
     'Team Player': () => {
-        const kudos = JSON.parse(localStorage.getItem('rh_kudos') || '[]');
+        const kudos = JSON.parse(localStorage.getItem(STORAGE_KEYS.KUDOS) || '[]');
         return kudos.length >= 5;
     },
 };
@@ -76,7 +77,7 @@ export function processGameEvent(eventType: GameEvent): {
     // 3) Streak tracking (on daily_login)
     if (eventType === 'daily_login') {
         const today = new Date().toDateString();
-        const lastActive = localStorage.getItem('rh_last_active_date');
+        const lastActive = localStorage.getItem(STORAGE_KEYS.DAILY_LOGIN);
         if (lastActive !== today) {
             const yesterday = new Date(Date.now() - 86400000).toDateString();
             if (lastActive === yesterday) {
@@ -86,7 +87,7 @@ export function processGameEvent(eventType: GameEvent): {
             } else {
                 user.streak = 1;
             }
-            localStorage.setItem('rh_last_active_date', today);
+            localStorage.setItem(STORAGE_KEYS.DAILY_LOGIN, today);
             result.streakUpdated = true;
         }
     }

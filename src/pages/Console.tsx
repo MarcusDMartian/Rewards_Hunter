@@ -18,6 +18,7 @@ import {
 import { Organization, User, KaizenIdea, RedemptionRequest, Reward } from '../types';
 import * as authService from '../services/authService';
 import { getIdeas, updateIdea, getRedemptions, saveRedemptions } from '../services/storageService';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Sub-components
 import ConsoleDashboardTab from './console/ConsoleDashboardTab';
@@ -37,7 +38,7 @@ const Console: React.FC = () => {
     const [redemptions, setRedemptions] = useState<RedemptionRequest[]>([]);
     const [rewards, setRewards] = useState<Reward[]>([]);
     const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>(() => {
-        const stored = localStorage.getItem('rh_feature_toggles');
+        const stored = localStorage.getItem(STORAGE_KEYS.FEATURE_TOGGLES);
         return stored ? JSON.parse(stored) : {
             'Kaizen Ideas': true, 'Kudos': true, 'Rewards': true, 'Leaderboard': true,
             'Feedback': true, 'Missions': false, 'AI Assistant': false, 'Badges': true,
@@ -54,7 +55,7 @@ const Console: React.FC = () => {
         setAllUsers(authService.getAllUsers().filter(u => u.role !== 'SystemAdmin'));
         setAllIdeas(getIdeas());
         setRedemptions(getRedemptions());
-        setRewards(JSON.parse(localStorage.getItem('rh_rewards') || '[]'));
+        setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
         setStats(authService.getPlatformStats());
         setIsLoading(false);
     };
@@ -73,7 +74,7 @@ const Console: React.FC = () => {
     const toggleFeature = (name: string) => {
         const updated = { ...featureToggles, [name]: !featureToggles[name] };
         setFeatureToggles(updated);
-        localStorage.setItem('rh_feature_toggles', JSON.stringify(updated));
+        localStorage.setItem(STORAGE_KEYS.FEATURE_TOGGLES, JSON.stringify(updated));
     };
 
     const formatDate = (dateString: string) =>

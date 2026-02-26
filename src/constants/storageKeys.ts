@@ -7,7 +7,9 @@ export const STORAGE_KEYS = {
     USERS: 'rh_users',
     CURRENT_USER: 'rh_current_user',
     AUTH_SESSION: 'rh_auth_session',
+    AUTH_ORG: 'rh_auth_org',
     ORGANIZATIONS: 'rh_organizations',
+    JOIN_REQUESTS: 'rh_join_requests',
 
     // Features
     IDEAS: 'rh_kaizen_ideas',
@@ -24,11 +26,7 @@ export const STORAGE_KEYS = {
     FEATURE_TOGGLES: 'rh_feature_toggles',
     ONBOARDING_COMPLETE: 'rh_onboarding_complete',
     DAILY_LOGIN: 'rh_daily_login',
-
-    // Legacy keys (for migration)
-    LEGACY_USERS: 'reward_hunter_users',
-    LEGACY_ORGANIZATIONS: 'reward_hunter_organizations',
-    LEGACY_SESSION: 'reward_hunter_session',
+    POINT_RULES: 'rh_point_rules',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
