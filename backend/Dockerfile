@@ -6,6 +6,9 @@ FROM node:22-slim
 
 WORKDIR /app
 
+# Install OpenSSL library required by Prisma on Debian slim images
+RUN apt-get update -y && apt-get install -y openssl
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
