@@ -4,38 +4,47 @@
 
 import React, { useState } from 'react';
 import { Gift, Clock, Plus, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-import { Reward, RedemptionRequest } from '../../types';
+import { RedemptionRequest } from '../../types';
 import { ManagementTabProps } from './managementTypes';
-import { STORAGE_KEYS } from '../../constants/storageKeys';
+import * as storageService from '../../services/storageService';
 
 const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setRewards, redemptions, setRedemptions }) => {
     const [showForm, setShowForm] = useState(false);
     const [newReward, setNewReward] = useState({ name: '', description: '', cost: 100, type: 'Voucher' as 'Voucher' | 'DayOff' | 'Merch', stock: 10 });
 
-    const handleCreateReward = () => {
+    const handleCreateReward = async () => {
         if (!newReward.name.trim()) return;
-        const r: Reward = { id: `rw_${Date.now()}`, ...newReward, image: '', isActive: true };
-        const updated = [...rewards, r];
-        setRewards(updated);
-        localStorage.setItem(STORAGE_KEYS.REWARDS, JSON.stringify(updated));
-        setNewReward({ name: '', description: '', cost: 100, type: 'Voucher', stock: 10 });
-        setShowForm(false);
+        try {
+            const added = await storageService.addReward(newReward);
+            setRewards([...rewards, added]);
+            setNewReward({ name: '', description: '', cost: 100, type: 'Voucher', stock: 10 });
+            setShowForm(false);
+        } catch (err) {
+            console.error('Failed to create reward', err);
+        }
     };
 
-    const handleDeleteReward = (rewardId: string) => {
-        const updated = rewards.filter(r => r.id !== rewardId);
-        setRewards(updated);
-        localStorage.setItem(STORAGE_KEYS.REWARDS, JSON.stringify(updated));
+    const handleDeleteReward = async (rewardId: string) => {
+        try {
+            await storageService.deleteReward(rewardId);
+            setRewards(rewards.filter(r => r.id !== rewardId));
+        } catch (err) {
+            console.error('Failed to delete reward', err);
+        }
     };
 
-    const handleRedemptionAction = (redId: string, status: 'Approved' | 'Rejected') => {
-        const updated = redemptions.map(red =>
-            red.id === redId
-                ? { ...red, status: status as RedemptionRequest['status'], processedAt: new Date().toISOString() }
-                : red
-        );
-        setRedemptions(updated);
-        // TODO: API call to process redemption on backend
+    const handleRedemptionAction = async (redId: string, status: 'Approved' | 'Rejected') => {
+        try {
+            await storageService.processRedemption(redId, status);
+            const updated = redemptions.map(red =>
+                red.id === redId
+                    ? { ...red, status: status as RedemptionRequest['status'], processedAt: new Date().toISOString() }
+                    : red
+            );
+            setRedemptions(updated);
+        } catch (err) {
+            console.error('Failed to process redemption', err);
+        }
     };
 
     return (

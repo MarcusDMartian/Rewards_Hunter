@@ -6,21 +6,23 @@ import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Badge } from '../../types';
 import { ManagementTabProps } from './managementTypes';
-import { getCurrentUser, saveCurrentUser } from '../../services/storageService';
+import * as storageService from '../../services/storageService';
 
 const ManagementBadgesTab: React.FC<ManagementTabProps> = ({ badges, setBadges }) => {
     const [showForm, setShowForm] = useState(false);
     const [newBadge, setNewBadge] = useState({ name: '', icon: '🏆', color: 'bg-indigo-100' });
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!newBadge.name.trim()) return;
-        const b: Badge = { id: `b_${Date.now()}`, description: '', ...newBadge, unlocked: false };
-        const user = getCurrentUser();
-        user.badges = [...(user.badges || []), b];
-        saveCurrentUser(user);
-        setBadges(user.badges);
-        setNewBadge({ name: '', icon: '🏆', color: 'bg-indigo-100' });
-        setShowForm(false);
+
+        try {
+            const added = await storageService.addBadge(newBadge);
+            setBadges([...badges, { ...added, unlocked: false }]);
+            setNewBadge({ name: '', icon: '🏆', color: 'bg-indigo-100' });
+            setShowForm(false);
+        } catch (err) {
+            console.error('Failed to create badge', err);
+        }
     };
 
     return (

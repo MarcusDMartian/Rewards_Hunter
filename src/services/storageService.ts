@@ -3,7 +3,7 @@
 // ============================================
 
 import api from './apiClient';
-import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest } from '../types';
+import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest, Reward, Badge } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // ============================================
@@ -178,6 +178,21 @@ export async function addRedemption(rewardId: string): Promise<RedemptionRequest
     return data;
 }
 
+export async function addReward(reward: Partial<Reward>): Promise<Reward> {
+    const { data } = await api.post('/admin/rewards', reward);
+    return data;
+}
+
+export async function deleteReward(rewardId: string): Promise<Reward> {
+    const { data } = await api.delete(`/admin/rewards/${rewardId}`);
+    return data;
+}
+
+export async function processRedemption(redemptionId: string, status: 'Approved' | 'Rejected', note?: string): Promise<RedemptionRequest> {
+    const { data } = await api.patch(`/admin/redemptions/${redemptionId}`, { status, note });
+    return data;
+}
+
 // ============================================
 // GAMIFICATION EVENTS
 // ============================================
@@ -197,6 +212,11 @@ export async function getBadges(): Promise<any[]> {
     } catch {
         return [];
     }
+}
+
+export async function addBadge(badge: Partial<Badge>): Promise<Badge> {
+    const { data } = await api.post('/admin/badges', badge);
+    return data;
 }
 
 // ============================================
