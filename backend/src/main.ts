@@ -11,13 +11,7 @@ async function bootstrap() {
 
   // Enable CORS with fixed settings for production
   app.enableCors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => {
-      // Allow all origins (reflecting them)
-      callback(null, true);
-    },
+    origin: ['https://rewardshunter.vercel.app', 'http://localhost:5173'], // Explicitly allow Vercel and local dev
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
