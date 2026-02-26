@@ -17,7 +17,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { JoinRequest, User, Mission, Reward, Badge, RedemptionRequest } from '../types';
 import * as authService from '../services/authService';
 import * as storageService from '../services/storageService';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Sub-components
 import ManagementRequestsTab from './management/ManagementRequestsTab';
@@ -55,8 +54,8 @@ const Management: React.FC = () => {
                 setMembers(orgUsers.filter(u => u.id !== currentUser?.id));
             }
             setMissions(await storageService.getMissions());
-            setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
-            setBadges(storageService.getCurrentUser().badges || []);
+            setRewards(await storageService.getRewards());
+            setBadges(await storageService.getBadges());
             setRedemptions(await storageService.getRedemptions());
         } catch (err) {
             console.error('Failed to load management data:', err);

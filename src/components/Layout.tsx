@@ -150,16 +150,16 @@ export default function Layout({ children }: LayoutProps) {
                             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
                         </button>
 
-                        <Link to="/profile" className="flex items-center gap-2">
+                        <Link to="/profile" className="flex items-center gap-2 shrink-0">
                             {currentUser?.avatar && !avatarError ? (
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
-                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white shrink-0"
                                     onError={() => setAvatarError(true)}
                                 />
                             ) : (
-                                <div className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                <div className="w-8 h-8 shrink-0 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                                     <User className="w-4 h-4 text-white" />
                                 </div>
                             )}
@@ -209,16 +209,16 @@ export default function Layout({ children }: LayoutProps) {
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                         </button>
 
-                        <Link to="/profile">
+                        <Link to="/profile" className="shrink-0 block">
                             {currentUser?.avatar && !avatarError ? (
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
-                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white shrink-0"
                                     onError={() => setAvatarError(true)}
                                 />
                             ) : (
-                                <div className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                <div className="w-8 h-8 shrink-0 rounded-full ring-2 ring-indigo-500/50 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                                     <User className="w-4 h-4 text-white" />
                                 </div>
                             )}
