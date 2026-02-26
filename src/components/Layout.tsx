@@ -154,10 +154,13 @@ export default function Layout({ children }: LayoutProps) {
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
-                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
                                     onError={(e) => {
+                                        // Hide the broken image and show the fallback sibling
                                         e.currentTarget.style.display = 'none';
-                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                        }
                                     }}
                                 />
                             ) : null}
@@ -215,10 +218,12 @@ export default function Layout({ children }: LayoutProps) {
                                 <img
                                     src={currentUser.avatar}
                                     alt={currentUser?.name || 'User'}
-                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50"
+                                    className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover bg-white"
                                     onError={(e) => {
                                         e.currentTarget.style.display = 'none';
-                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                        }
                                     }}
                                 />
                             ) : null}

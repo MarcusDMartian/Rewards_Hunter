@@ -215,13 +215,8 @@ const Login: React.FC = () => {
 
                                 {/* Demo Hint */}
                                 <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
-                                    <p className="text-indigo-300 text-xs font-medium mb-2">🎮 Demo Accounts:</p>
-                                    <ul className="text-slate-400 text-xs space-y-1">
-                                        <li>• <span className="text-indigo-300">a@company.com</span> - Member</li>
-                                        <li>• <span className="text-indigo-300">owner@company.com</span> - Superadmin</li>
-                                        <li>• <span className="text-indigo-300">admin@rewardhunter.app</span> - System Admin</li>
-                                        <li className="text-slate-500 italic">Password: any non-empty string</li>
-                                    </ul>
+                                    <p className="text-indigo-300 text-xs font-medium mb-2">🎮 For Gamer - By Gamer.</p>
+                                    <p className="text-indigo-300 text-xs font-medium mb-2">Powered by FastYear.Tech</p>
                                 </div>
                             </form>
                         )}
@@ -433,7 +428,7 @@ const Login: React.FC = () => {
 
                 {/* Footer */}
                 <p className="text-center text-slate-500 text-sm mt-6">
-                    Kaizen – Loyalty – Gamification Platform
+                    Mang đồng nghiệp đến gần nhau hơn.
                 </p>
             </div>
         </div>
