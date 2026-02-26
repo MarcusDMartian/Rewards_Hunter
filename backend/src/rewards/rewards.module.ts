@@ -6,8 +6,8 @@ import { RewardsService } from './rewards.service';
 import { RewardsController } from './rewards.controller';
 
 @Module({
-    controllers: [RewardsController],
-    providers: [RewardsService],
-    exports: [RewardsService],
+  controllers: [RewardsController],
+  providers: [RewardsService],
+  exports: [RewardsService],
 })
-export class RewardsModule { }
+export class RewardsModule {}

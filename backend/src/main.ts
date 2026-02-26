@@ -11,7 +11,10 @@ async function bootstrap() {
 
   // Enable CORS with fixed settings for production
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       // Allow all origins (reflecting them)
       callback(null, true);
     },
@@ -21,10 +24,12 @@ async function bootstrap() {
   });
 
   // Enable validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // API prefix
   app.setGlobalPrefix('api');
@@ -36,16 +41,8 @@ async function bootstrap() {
       status: 'ok',
       message: 'Reward Hunter API is Live! 🚀',
       env: process.env.NODE_ENV || 'development',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-  });
-
-  // Global error handler for preflight OPTIONS (aggressive CORS fix)
-  server.options('*', (req: any, res: any) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.send(200);
   });
 
   const port = process.env.PORT || 3000;

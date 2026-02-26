@@ -90,8 +90,6 @@ describe('Auth (e2e)', () => {
   });
 
   it('GET /api/auth/me should return 401 without token', async () => {
-    await request(app.getHttpServer())
-      .get('/api/auth/me')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/auth/me').expect(401);
   });
 });

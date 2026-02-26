@@ -28,9 +28,6 @@ import { FeedbackModule } from './feedback/feedback.module';
     GamificationModule,
     FeedbackModule,
   ],
-  providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule { }
-
+export class AppModule {}

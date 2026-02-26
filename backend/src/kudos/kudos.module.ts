@@ -6,8 +6,8 @@ import { KudosService } from './kudos.service';
 import { KudosController } from './kudos.controller';
 
 @Module({
-    controllers: [KudosController],
-    providers: [KudosService],
-    exports: [KudosService],
+  controllers: [KudosController],
+  providers: [KudosService],
+  exports: [KudosService],
 })
-export class KudosModule { }
+export class KudosModule {}
