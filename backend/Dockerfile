@@ -22,11 +22,7 @@ COPY . .
 # Build the NestJS application
 RUN npm run build
 
-# Verify dist folder exists
-RUN ls -la dist/
 
-# Expose port
-EXPOSE 3000
 
 # Start the application
 CMD ["node", "dist/src/main.js"]
