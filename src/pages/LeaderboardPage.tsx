@@ -2,16 +2,29 @@
 // LEADERBOARD PAGE - RANKINGS
 // ============================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
-import { MOCK_USERS } from '../data/mockData';
 import LeaderboardComponent from '../components/Leaderboard';
+import { getLeaderboard } from '../services/storageService';
+import { User } from '../types';
 
 type Period = 'month' | 'quarter' | 'all';
 
 export default function LeaderboardPage() {
     const [period, setPeriod] = useState<Period>('month');
     const [selectedTeam, setSelectedTeam] = useState('all');
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadLeaderboard = async () => {
+            setLoading(true);
+            const data = await getLeaderboard(period, selectedTeam);
+            setUsers(data);
+            setLoading(false);
+        };
+        loadLeaderboard();
+    }, [period, selectedTeam]);
 
     const getSortBy = () => {
         switch (period) {
@@ -72,14 +85,18 @@ export default function LeaderboardPage() {
 
             {/* Leaderboard */}
             <div className="glass-card p-6">
-                <LeaderboardComponent
-                    users={MOCK_USERS}
-                    sortBy={getSortBy()}
-                    limit={20}
-                    showTeamFilter
-                    selectedTeam={selectedTeam}
-                    onTeamChange={setSelectedTeam}
-                />
+                {loading ? (
+                    <div className="text-center text-slate-500 py-10">Loading rankings...</div>
+                ) : (
+                    <LeaderboardComponent
+                        users={users}
+                        sortBy={getSortBy()}
+                        limit={20}
+                        showTeamFilter
+                        selectedTeam={selectedTeam}
+                        onTeamChange={setSelectedTeam}
+                    />
+                )}
             </div>
         </div>
     );

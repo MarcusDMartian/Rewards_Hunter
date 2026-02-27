@@ -25,6 +25,29 @@ export function saveCurrentUser(user: User): void {
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
 }
 
+export async function getLeaderboard(period: string = 'all', teamId?: string): Promise<User[]> {
+    try {
+        const params = new URLSearchParams();
+        if (period) params.append('period', period);
+        if (teamId && teamId !== 'all') params.append('teamId', teamId);
+
+        const { data } = await api.get(`/leaderboard?${params.toString()}`);
+        return data;
+    } catch {
+        return [];
+    }
+}
+
+export async function getAllUsers(orgId?: string): Promise<User[]> {
+    try {
+        const params = orgId ? `?orgId=${orgId}` : '';
+        const { data } = await api.get(`/users${params}`);
+        return data;
+    } catch {
+        return [];
+    }
+}
+
 export async function updateUserPoints(amount: number): Promise<User> {
     // Points are managed server-side via gamification events
     // This is a no-op for forward compatibility — the server handles point updates

@@ -5,8 +5,7 @@
 import { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 import { User } from '../types';
-import { MOCK_USERS } from '../data/mockData';
-import { getCurrentUser } from '../services/storageService';
+import { getCurrentUser, getAllUsers } from '../services/storageService';
 
 interface UserSelectModalProps {
     isOpen: boolean;
@@ -22,16 +21,23 @@ export default function UserSelectModal({
     excludeCurrentUser = true,
 }: UserSelectModalProps) {
     const [searchTerm, setSearchTerm] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
     const currentUser = getCurrentUser();
 
+    useEffect(() => {
+        if (isOpen) {
+            getAllUsers(currentUser.orgId).then(data => setUsers(data));
+        }
+    }, [isOpen, currentUser.orgId]);
+
     // Filter users
-    const filteredUsers = MOCK_USERS.filter((user) => {
+    const filteredUsers = users.filter((user) => {
         if (excludeCurrentUser && user.id === currentUser.id) return false;
         const searchLower = searchTerm.toLowerCase();
         return (
-            user.name.toLowerCase().includes(searchLower) ||
-            user.team.toLowerCase().includes(searchLower) ||
-            user.position.toLowerCase().includes(searchLower)
+            (user.name?.toLowerCase() || '').includes(searchLower) ||
+            (user.team?.toLowerCase() || '').includes(searchLower) ||
+            (user.position?.toLowerCase() || '').includes(searchLower)
         );
     });
 
