@@ -15,7 +15,7 @@ import { Kudos as KudosType, User } from '../types';
 import { getKudos, addKudos, toggleKudosLike, getCurrentUser } from '../services/storageService';
 import { processGameEvent } from '../services/gamificationService';
 
-import { CORE_VALUES } from '../constants';
+import api from '../services/apiClient';
 import UserSelectModal from '../components/UserSelectModal';
 import Pagination from '../components/Pagination';
 import { useToast } from '../contexts/ToastContext';
@@ -40,10 +40,24 @@ export default function Kudos() {
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [coreValuesList, setCoreValuesList] = useState<{ id: string, name: string, color: string, description: string }[]>([]);
 
     useEffect(() => {
         loadKudos();
+        loadCoreValues();
     }, []);
+
+    const loadCoreValues = async () => {
+        try {
+            const { data } = await api.get('/settings/core-values');
+            if (data && Array.isArray(data)) {
+                setCoreValuesList(data);
+                if (data.length > 0) setCoreValue(data[0].name);
+            }
+        } catch (err) {
+            console.error('Failed to load core values', err);
+        }
+    };
 
     const loadKudos = async () => {
         const data = await getKudos();
@@ -100,7 +114,7 @@ export default function Kudos() {
     const paginatedKudos = filteredKudos.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
     const getCoreValueColor = (value: string) => {
-        const found = CORE_VALUES.find((v) => v.name === value);
+        const found = coreValuesList.find((v) => v.name === value);
         return found?.color || 'bg-rose-500';
     };
 
@@ -196,22 +210,28 @@ export default function Kudos() {
                                 Core Value
                             </label>
                             <div className="grid grid-cols-2 gap-2">
-                                {CORE_VALUES.map((value) => (
-                                    <button
-                                        key={value.id}
-                                        type="button"
-                                        onClick={() => setCoreValue(value.name as KudosType['coreValue'])}
-                                        className={`p-3 rounded-xl border-2 transition-all text-left ${coreValue === value.name
-                                            ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20'
-                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        <div className={`w-6 h-6 rounded-full ${value.color} mb-2`} />
-                                        <div className="font-medium text-sm text-slate-800 dark:text-white">
-                                            {value.name}
-                                        </div>
-                                    </button>
-                                ))}
+                                {coreValuesList.length === 0 ? (
+                                    <div className="col-span-2 text-sm text-slate-500 dark:text-slate-400 py-2">
+                                        Loading core values...
+                                    </div>
+                                ) : (
+                                    coreValuesList.map((value) => (
+                                        <button
+                                            key={value.id}
+                                            type="button"
+                                            onClick={() => setCoreValue(value.name as KudosType['coreValue'])}
+                                            className={`p-3 rounded-xl border-2 transition-all text-left ${coreValue === value.name
+                                                ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20'
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                                                }`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-full ${value.color} mb-2`} />
+                                            <div className="font-medium text-sm text-slate-800 dark:text-white">
+                                                {value.name}
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
                             </div>
                         </div>
 

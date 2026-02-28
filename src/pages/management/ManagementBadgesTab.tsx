@@ -7,8 +7,10 @@ import { Plus } from 'lucide-react';
 
 import { ManagementTabProps } from './managementTypes';
 import * as storageService from '../../services/storageService';
+import { useToast } from '../../contexts/ToastContext';
 
 const ManagementBadgesTab: React.FC<ManagementTabProps> = ({ badges, setBadges }) => {
+    const { addToast } = useToast();
     const [showForm, setShowForm] = useState(false);
     const [newBadge, setNewBadge] = useState({ name: '', icon: '🏆', color: 'bg-indigo-100' });
 
@@ -20,8 +22,10 @@ const ManagementBadgesTab: React.FC<ManagementTabProps> = ({ badges, setBadges }
             setBadges([...badges, { ...added, unlocked: false }]);
             setNewBadge({ name: '', icon: '🏆', color: 'bg-indigo-100' });
             setShowForm(false);
+            addToast('Badge created successfully!', 'success');
         } catch (err) {
             console.error('Failed to create badge', err);
+            addToast('Failed to create badge. Check the network connection.', 'error');
         }
     };
 

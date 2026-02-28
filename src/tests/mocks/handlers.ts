@@ -85,6 +85,19 @@ const mockTransactions = [
     },
 ];
 
+const mockCoreValues = [
+    { id: 'cv_1', name: 'Kaizen', color: 'bg-rose-500', description: 'Continuous improvement' },
+    { id: 'cv_2', name: 'Teamwork', color: 'bg-indigo-500', description: 'Working together' },
+    { id: 'cv_3', name: 'Innovation', color: 'bg-amber-500', description: 'New ideas' },
+];
+
+const mockImpactTypes = [
+    { id: 'im_1', name: 'Speed', icon: '⚡', color: 'bg-blue-500' },
+    { id: 'im_2', name: 'Quality', icon: '⭐', color: 'bg-emerald-500' },
+    { id: 'im_3', name: 'Cost', icon: '💰', color: 'bg-amber-500' },
+    { id: 'im_4', name: 'Safety', icon: '🛡️', color: 'bg-rose-500' },
+];
+
 export const handlers = [
     // ---- AUTH ----
     http.post(`${API_URL}/auth/login`, async ({ request }) => {
@@ -95,8 +108,46 @@ export const handlers = [
         return new HttpResponse(null, { status: 401 });
     }),
 
-    http.post(`${API_URL}/auth/register`, async () => {
+    http.post(`${API_URL}/auth/register`, async ({ request }) => {
+        const body = await request.json() as any;
+        if (!body.otp) {
+            return HttpResponse.json({ message: 'OTP is required' }, { status: 400 });
+        }
+        if (body.otp !== '123456') {
+            return HttpResponse.json({ message: 'Invalid OTP code' }, { status: 400 });
+        }
         return HttpResponse.json({ access_token: 'mock-jwt-token', user: mockUser });
+    }),
+
+    http.post(`${API_URL}/auth/register-org`, async ({ request }) => {
+        const body = await request.json() as any;
+        if (!body.otp) {
+            return HttpResponse.json({ message: 'OTP is required' }, { status: 400 });
+        }
+        if (body.otp !== '123456') {
+            return HttpResponse.json({ message: 'Invalid OTP code' }, { status: 400 });
+        }
+        return HttpResponse.json({
+            accessToken: 'mock-jwt-token',
+            user: { ...mockUser, orgId: 'org_new', role: 'Superadmin' },
+            organization: { id: 'org_new', name: body.orgName, domain: body.email.split('@')[1] }
+        });
+    }),
+
+    http.post(`${API_URL}/auth/join-request`, async ({ request }) => {
+        const body = await request.json() as any;
+        if (!body.otp) {
+            return HttpResponse.json({ message: 'OTP is required' }, { status: 400 });
+        }
+        if (body.otp !== '123456') {
+            return HttpResponse.json({ message: 'Invalid OTP code' }, { status: 400 });
+        }
+        return HttpResponse.json({ success: true }, { status: 201 });
+    }),
+
+    http.post(`${API_URL}/auth/send-otp`, async () => {
+        // Mock sending OTP, always succeeds
+        return HttpResponse.json({ success: true });
     }),
 
     http.get(`${API_URL}/auth/me`, ({ request }) => {
@@ -113,6 +164,24 @@ export const handlers = [
             return HttpResponse.json({ exists: true, organization: { id: 'org_1', name: 'Company', domain: 'company.com' } });
         }
         return HttpResponse.json({ exists: false });
+    }),
+
+    // ---- SETTINGS ----
+    http.get(`${API_URL}/settings/core-values`, () => {
+        return HttpResponse.json(mockCoreValues);
+    }),
+
+    http.get(`${API_URL}/settings/impact-types`, () => {
+        return HttpResponse.json(mockImpactTypes);
+    }),
+
+    http.get(`${API_URL}/settings/point-rules`, () => {
+        return HttpResponse.json({ idea_created: 50, kudos_sent: 10, kudos_received: 15, daily_login: 5 });
+    }),
+
+    http.post(`${API_URL}/settings/point-rules`, async ({ request }) => {
+        const body = await request.json();
+        return HttpResponse.json(body);
     }),
 
     // ---- IDEAS ----
@@ -154,6 +223,34 @@ export const handlers = [
 
     http.post(`${API_URL}/redemptions`, async () => {
         return HttpResponse.json({ id: 'red_1', status: 'Pending' }, { status: 201 });
+    }),
+
+    // ---- ADMIN REWARDS ----
+    http.get(`${API_URL}/rewards`, () => {
+        return HttpResponse.json([
+            { id: 'rew_1', name: 'Mock Voucher', description: 'Test', cost: 100, stock: 5, isActive: true }
+        ]);
+    }),
+
+    http.post(`${API_URL}/admin/rewards`, async ({ request }) => {
+        const body = await request.json() as any;
+        return HttpResponse.json({ ...body, id: `rew_${Date.now()}`, isActive: true });
+    }),
+
+    http.delete(`${API_URL}/admin/rewards/:id`, () => {
+        return new HttpResponse(null, { status: 204 });
+    }),
+
+    // ---- ADMIN BADGES ----
+    http.get(`${API_URL}/badges`, () => {
+        return HttpResponse.json([
+            { id: 'bdg_1', name: 'Early Bird', icon: '🐦', color: 'bg-emerald-100', description: 'Log in early' }
+        ]);
+    }),
+
+    http.post(`${API_URL}/admin/badges`, async ({ request }) => {
+        const body = await request.json() as any;
+        return HttpResponse.json({ ...body, id: `bdg_${Date.now()}` });
     }),
 
     // ---- GAMIFICATION ----

@@ -185,6 +185,7 @@ export interface RegisterOrgData {
     password: string;
     name: string;
     orgName: string;
+    otp?: string;
 }
 
 export interface JoinRequestData {
@@ -192,6 +193,7 @@ export interface JoinRequestData {
     password: string;
     name: string;
     orgId: string;
+    otp?: string;
 }
 
 export interface DomainCheckResult {

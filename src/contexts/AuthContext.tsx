@@ -9,9 +9,10 @@ import * as authService from '../services/authService';
 interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
-    registerOrganization: (data: { email: string; password: string; name: string; orgName: string }) => Promise<{ success: boolean; error?: string }>;
-    submitJoinRequest: (data: { email: string; password: string; name: string; orgId: string }) => Promise<{ success: boolean; error?: string }>;
+    registerOrganization: (data: { email: string; password: string; name: string; orgName: string; otp?: string }) => Promise<{ success: boolean; error?: string }>;
+    submitJoinRequest: (data: { email: string; password: string; name: string; orgId: string; otp?: string }) => Promise<{ success: boolean; error?: string }>;
     checkDomain: (email: string) => Promise<{ exists: boolean; organization?: Organization; userExists?: boolean }>;
+    sendOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
     refreshAuth: () => Promise<void>;
 }
 
@@ -94,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
     };
 
-    const registerOrganization = async (data: { email: string; password: string; name: string; orgName: string }) => {
+    const registerOrganization = async (data: { email: string; password: string; name: string; orgName: string; otp?: string }) => {
         const result = await authService.registerOrganization(data);
 
         if (result.success && result.user) {
@@ -107,12 +108,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: result.error };
     };
 
-    const submitJoinRequest = async (data: { email: string; password: string; name: string; orgId: string }) => {
+    const submitJoinRequest = async (data: { email: string; password: string; name: string; orgId: string; otp?: string }) => {
         return authService.submitJoinRequest(data);
     };
 
     const checkDomain = async (email: string) => {
         return authService.checkDomain(email);
+    };
+
+    const sendOtp = async (email: string) => {
+        return authService.sendOtp(email);
     };
 
     const value: AuthContextType = {
@@ -125,6 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         registerOrganization,
         submitJoinRequest,
         checkDomain,
+        sendOtp,
         refreshAuth,
     };
 

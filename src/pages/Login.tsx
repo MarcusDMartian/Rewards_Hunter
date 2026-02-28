@@ -13,7 +13,8 @@ import {
     ArrowLeft,
     Clock,
     Loader2,
-    Target
+    Target,
+    ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Organization } from '../types';
@@ -33,6 +34,10 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // OTP states
+    const [otp, setOtp] = useState('');
+    const [isOtpRequested, setIsOtpRequested] = useState(false);
+
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -42,6 +47,8 @@ const Login: React.FC = () => {
             return;
         }
 
+        setIsOtpRequested(false);
+        setOtp('');
         setIsLoading(true);
         try {
             const result = await checkDomain(email);
@@ -93,8 +100,32 @@ const Login: React.FC = () => {
             return;
         }
 
+        if (!isOtpRequested) {
+            // Step 1: Request OTP
+            try {
+                const result = await useAuth().sendOtp(email);
+                if (result.success) {
+                    setIsOtpRequested(true);
+                    setError('');
+                } else {
+                    setError(result.error || 'Failed to send OTP');
+                }
+            } catch {
+                setError('An error occurred while sending OTP');
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        if (!otp || otp.length < 6) {
+            setError('Please enter a valid 6-digit OTP');
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            const result = await registerOrganization({ email, password, name, orgName });
+            const result = await registerOrganization({ email, password, name, orgName, otp });
 
             if (result.success) {
                 navigate('/');
@@ -119,12 +150,37 @@ const Login: React.FC = () => {
             return;
         }
 
+        if (!isOtpRequested) {
+            // Step 1: Request OTP
+            try {
+                const result = await useAuth().sendOtp(email);
+                if (result.success) {
+                    setIsOtpRequested(true);
+                    setError('');
+                } else {
+                    setError(result.error || 'Failed to send OTP');
+                }
+            } catch {
+                setError('An error occurred while sending OTP');
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        if (!otp || otp.length < 6) {
+            setError('Please enter a valid 6-digit OTP');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const result = await submitJoinRequest({
                 email,
                 password,
                 name,
-                orgId: organization.id
+                orgId: organization.id,
+                otp
             });
 
             if (result.success) {
@@ -140,6 +196,12 @@ const Login: React.FC = () => {
     };
 
     const goBack = () => {
+        if (isOtpRequested) {
+            setIsOtpRequested(false);
+            setOtp('');
+            setError('');
+            return;
+        }
         setStep('email');
         setError('');
     };
@@ -302,10 +364,11 @@ const Login: React.FC = () => {
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder="Your Full Name"
                                             className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            disabled={isOtpRequested}
                                         />
                                     </div>
 
-                                    <div className="relative">
+                                    <div className="relative" style={{ display: isOtpRequested ? 'none' : 'block' }}>
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                         <input
                                             type="password"
@@ -315,6 +378,22 @@ const Login: React.FC = () => {
                                             className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                         />
                                     </div>
+
+                                    {isOtpRequested && (
+                                        <div className="relative animate-fade-in">
+                                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
+                                            <input
+                                                type="text"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                placeholder="Enter 6-digit OTP"
+                                                maxLength={6}
+                                                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-emerald-500/30 rounded-xl text-emerald-100 placeholder-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                                autoFocus
+                                            />
+                                            <p className="text-emerald-400/80 text-xs mt-2 text-center">We sent a verification code to your email.</p>
+                                        </div>
+                                    )}
 
                                     {error && (
                                         <p className="text-red-400 text-sm text-center">{error}</p>
@@ -329,7 +408,7 @@ const Login: React.FC = () => {
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>
-                                                <span>Create Organization</span>
+                                                <span>{isOtpRequested ? 'Verify & Create' : 'Create Organization'}</span>
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
@@ -359,11 +438,12 @@ const Login: React.FC = () => {
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder="Your Full Name"
                                             className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                            autoFocus
+                                            autoFocus={!isOtpRequested}
+                                            disabled={isOtpRequested}
                                         />
                                     </div>
 
-                                    <div className="relative">
+                                    <div className="relative" style={{ display: isOtpRequested ? 'none' : 'block' }}>
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                         <input
                                             type="password"
@@ -373,6 +453,22 @@ const Login: React.FC = () => {
                                             className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                         />
                                     </div>
+
+                                    {isOtpRequested && (
+                                        <div className="relative animate-fade-in">
+                                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
+                                            <input
+                                                type="text"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                placeholder="Enter 6-digit OTP"
+                                                maxLength={6}
+                                                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-emerald-500/30 rounded-xl text-emerald-100 placeholder-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                                autoFocus
+                                            />
+                                            <p className="text-emerald-400/80 text-xs mt-2 text-center">We sent a verification code to your email.</p>
+                                        </div>
+                                    )}
 
                                     {error && (
                                         <p className="text-red-400 text-sm text-center">{error}</p>
@@ -387,7 +483,7 @@ const Login: React.FC = () => {
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>
-                                                <span>Request to Join</span>
+                                                <span>{isOtpRequested ? 'Verify & Join' : 'Request to Join'}</span>
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
@@ -416,6 +512,8 @@ const Login: React.FC = () => {
                                         setPassword('');
                                         setName('');
                                         setOrganization(null);
+                                        setIsOtpRequested(false);
+                                        setOtp('');
                                     }}
                                     className="text-indigo-400 hover:text-indigo-300 text-sm underline"
                                 >

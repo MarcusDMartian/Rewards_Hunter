@@ -6,8 +6,10 @@ import React, { useState } from 'react';
 import { Building2, Target, Save } from 'lucide-react';
 import { ManagementTabProps } from './managementTypes';
 import api from '../../services/apiClient';
+import { useToast } from '../../contexts/ToastContext';
 
 const ManagementSettingsTab: React.FC<ManagementTabProps> = ({ organization }) => {
+    const { addToast } = useToast();
     const [orgName, setOrgName] = useState(organization?.name || '');
     const [pointRules, setPointRules] = useState({ idea_created: 50, kudos_sent: 10, kudos_received: 15, daily_login: 5 });
     const [settingsSaved, setSettingsSaved] = useState(false);
@@ -20,6 +22,7 @@ const ManagementSettingsTab: React.FC<ManagementTabProps> = ({ organization }) =
                 if (data) setPointRules(data);
             } catch (err) {
                 // Keep default if fail to fetch
+                console.warn('Could not load settings point rules', err);
             } finally {
                 setIsLoading(false);
             }
@@ -32,8 +35,10 @@ const ManagementSettingsTab: React.FC<ManagementTabProps> = ({ organization }) =
             await api.post('/settings/point-rules', pointRules);
             setSettingsSaved(true);
             setTimeout(() => setSettingsSaved(false), 2000);
+            addToast('Settings saved successfully.', 'success');
         } catch (err) {
             console.error('Failed to save settings:', err);
+            addToast('Failed to save settings changes.', 'error');
         }
     };
 

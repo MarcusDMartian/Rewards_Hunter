@@ -16,7 +16,7 @@ import { KaizenIdea } from '../types';
 import { getIdeas, addIdea, toggleVote, getCurrentUser } from '../services/storageService';
 import { processGameEvent } from '../services/gamificationService';
 
-import { IMPACT_TYPES } from '../constants';
+import api from '../services/apiClient';
 import Pagination from '../components/Pagination';
 import { useToast } from '../contexts/ToastContext';
 import usePageTitle from '../hooks/usePageTitle';
@@ -44,10 +44,24 @@ export default function KaizenIdeas() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [impactTypesList, setImpactTypesList] = useState<{ id: string, name: string, icon: string, color: string }[]>([]);
 
     useEffect(() => {
         loadIdeas();
+        loadImpactTypes();
     }, []);
+
+    const loadImpactTypes = async () => {
+        try {
+            const { data } = await api.get('/settings/impact-types');
+            if (data && Array.isArray(data)) {
+                setImpactTypesList(data);
+                if (data.length > 0) setImpact(data[0].name.split(' ')[0] as any);
+            }
+        } catch (err) {
+            console.error('Failed to load impact types', err);
+        }
+    };
 
     const loadIdeas = async () => {
         const data = await getIdeas();
@@ -132,7 +146,7 @@ export default function KaizenIdeas() {
     };
 
     const getImpactIcon = (impactType: string) => {
-        const found = IMPACT_TYPES.find((i) => i.name.toLowerCase().includes(impactType.toLowerCase()));
+        const found = impactTypesList.find((i) => i.name.toLowerCase().includes(impactType.toLowerCase()));
         return found?.icon || '💡';
     };
 
@@ -336,22 +350,28 @@ export default function KaizenIdeas() {
                             Impact Type
                         </label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {IMPACT_TYPES.map((type) => (
-                                <button
-                                    key={type.id}
-                                    type="button"
-                                    onClick={() => setImpact(type.name.split(' ')[0] as typeof impact)}
-                                    className={`p-3 rounded-xl border-2 transition-all ${impact.toLowerCase().includes(type.id)
-                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                                        }`}
-                                >
-                                    <span className="text-xl block mb-1">{type.icon}</span>
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        {type.name.split(' ')[0]}
-                                    </span>
-                                </button>
-                            ))}
+                            {impactTypesList.length === 0 ? (
+                                <div className="col-span-full text-sm text-slate-500 dark:text-slate-400 py-2">
+                                    Loading impact types...
+                                </div>
+                            ) : (
+                                impactTypesList.map((type) => (
+                                    <button
+                                        key={type.id}
+                                        type="button"
+                                        onClick={() => setImpact(type.name.split(' ')[0] as typeof impact)}
+                                        className={`p-3 rounded-xl border-2 transition-all ${impact.toLowerCase().includes(type.id)
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                            }`}
+                                    >
+                                        <span className="text-xl block mb-1">{type.icon}</span>
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            {type.name.split(' ')[0]}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
                         </div>
                     </div>
 
@@ -368,6 +388,7 @@ export default function KaizenIdeas() {
                             className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                             required
                         />
+                        {errors.problem && <p className="text-xs text-red-500 mt-1">{errors.problem}</p>}
                     </div>
 
                     {/* Proposal */}
@@ -383,6 +404,7 @@ export default function KaizenIdeas() {
                             className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                             required
                         />
+                        {errors.proposal && <p className="text-xs text-red-500 mt-1">{errors.proposal}</p>}
                     </div>
 
                     {/* Submit */}

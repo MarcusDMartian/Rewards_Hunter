@@ -7,8 +7,10 @@ import { Gift, Clock, Plus, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { RedemptionRequest } from '../../types';
 import { ManagementTabProps } from './managementTypes';
 import * as storageService from '../../services/storageService';
+import { useToast } from '../../contexts/ToastContext';
 
 const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setRewards, redemptions, setRedemptions }) => {
+    const { addToast } = useToast();
     const [showForm, setShowForm] = useState(false);
     const [newReward, setNewReward] = useState({ name: '', description: '', cost: 100, type: 'Voucher' as 'Voucher' | 'DayOff' | 'Merch', stock: 10 });
 
@@ -19,8 +21,10 @@ const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setReward
             setRewards([...rewards, added]);
             setNewReward({ name: '', description: '', cost: 100, type: 'Voucher', stock: 10 });
             setShowForm(false);
+            addToast('Reward created successfully!', 'success');
         } catch (err) {
             console.error('Failed to create reward', err);
+            addToast('Failed to create reward. Please check the network connection.', 'error');
         }
     };
 
@@ -28,8 +32,10 @@ const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setReward
         try {
             await storageService.deleteReward(rewardId);
             setRewards(rewards.filter(r => r.id !== rewardId));
+            addToast('Reward deleted successfully.', 'success');
         } catch (err) {
             console.error('Failed to delete reward', err);
+            addToast('Failed to delete reward.', 'error');
         }
     };
 
@@ -42,8 +48,10 @@ const ManagementRewardsTab: React.FC<ManagementTabProps> = ({ rewards, setReward
                     : red
             );
             setRedemptions(updated);
+            addToast(`Redemption request ${status.toLowerCase()}.`, 'success');
         } catch (err) {
             console.error('Failed to process redemption', err);
+            addToast('Failed to process redemption request.', 'error');
         }
     };
 

@@ -32,6 +32,19 @@ export const checkDomain = async (email: string): Promise<DomainCheckResult> => 
 };
 
 /**
+ * Send OTP to email
+ */
+export const sendOtp = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+        await api.post('/auth/send-otp', { email });
+        return { success: true };
+    } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to send OTP';
+        return { success: false, error: message };
+    }
+};
+
+/**
  * Login with email and password
  */
 export const login = async (credentials: LoginCredentials): Promise<{ success: boolean; user?: User; organization?: Organization; error?: string }> => {
