@@ -23,7 +23,7 @@ type Step = 'email' | 'login' | 'register-org' | 'join-request' | 'pending';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
-    const { login, registerOrganization, submitJoinRequest, checkDomain } = useAuth();
+    const { login, registerOrganization, submitJoinRequest, checkDomain, sendOtp } = useAuth();
 
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
         if (!isOtpRequested) {
             // Step 1: Request OTP
             try {
-                const result = await useAuth().sendOtp(email);
+                const result = await sendOtp(email);
                 if (result.success) {
                     setIsOtpRequested(true);
                     setError('');
@@ -153,7 +153,7 @@ const Login: React.FC = () => {
         if (!isOtpRequested) {
             // Step 1: Request OTP
             try {
-                const result = await useAuth().sendOtp(email);
+                const result = await sendOtp(email);
                 if (result.success) {
                     setIsOtpRequested(true);
                     setError('');
