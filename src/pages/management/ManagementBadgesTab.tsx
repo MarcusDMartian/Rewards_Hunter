@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Badge } from '../../types';
+
 import { ManagementTabProps } from './managementTypes';
 import * as storageService from '../../services/storageService';
 

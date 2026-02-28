@@ -18,7 +18,7 @@ import {
 import { Organization, User, KaizenIdea, RedemptionRequest, Reward } from '../types';
 import * as authService from '../services/authService';
 import { getIdeas, updateIdea, getRedemptions } from '../services/storageService';
-import { STORAGE_KEYS } from '../constants/storageKeys';
+
 
 // Sub-components
 import ConsoleDashboardTab from './console/ConsoleDashboardTab';
@@ -37,12 +37,9 @@ const Console: React.FC = () => {
     const [allIdeas, setAllIdeas] = useState<KaizenIdea[]>([]);
     const [redemptions, setRedemptions] = useState<RedemptionRequest[]>([]);
     const [rewards, setRewards] = useState<Reward[]>([]);
-    const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>(() => {
-        const stored = localStorage.getItem(STORAGE_KEYS.FEATURE_TOGGLES);
-        return stored ? JSON.parse(stored) : {
-            'Kaizen Ideas': true, 'Kudos': true, 'Rewards': true, 'Leaderboard': true,
-            'Feedback': true, 'Missions': false, 'AI Assistant': false, 'Badges': true,
-        };
+    const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({
+        'Kaizen Ideas': true, 'Kudos': true, 'Rewards': true, 'Leaderboard': true,
+        'Feedback': true, 'Missions': false, 'AI Assistant': false, 'Badges': true,
     });
     const [stats, setStats] = useState({ totalOrganizations: 0, totalUsers: 0, activeUsers: 0, pendingRequests: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +58,8 @@ const Console: React.FC = () => {
             setAllUsers(users.filter(u => u.role !== 'SystemAdmin'));
             setAllIdeas(await getIdeas());
             setRedemptions(await getRedemptions());
-            setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
+            // setRewards(JSON.parse(localStorage.getItem(STORAGE_KEYS.REWARDS) || '[]'));
+            setRewards([]); // Should fetch from API
             setStats(statsData);
         } catch (err) {
             console.error('Failed to load console data:', err);
@@ -69,6 +67,20 @@ const Console: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    // Load feature toggles from API
+    useEffect(() => {
+        const loadToggles = async () => {
+            try {
+                // TODO: Replace with actual API call to settings/flags when available
+                // const { data } = await api.get('/settings/flags');
+                // if (data) setFeatureToggles(data);
+            } catch (err) {
+                console.error('Failed to load feature toggles:', err);
+            }
+        };
+        loadToggles();
+    }, []);
 
     const handleIdeaAction = async (ideaId: string, status: 'Approved' | 'Rejected') => {
         await updateIdea(ideaId, { status });
@@ -81,10 +93,16 @@ const Console: React.FC = () => {
         // TODO: API call to process redemption on backend
     };
 
-    const toggleFeature = (name: string) => {
+    const toggleFeature = async (name: string) => {
         const updated = { ...featureToggles, [name]: !featureToggles[name] };
         setFeatureToggles(updated);
-        localStorage.setItem(STORAGE_KEYS.FEATURE_TOGGLES, JSON.stringify(updated));
+        try {
+            // TODO: API call to save settings/flags
+            // await api.post('/settings/flags', updated);
+        } catch (err) {
+            console.error('Failed to save toggle state:', err);
+            // Revert state if necessary...
+        }
     };
 
     const formatDate = (dateString: string) =>

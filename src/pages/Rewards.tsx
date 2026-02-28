@@ -12,8 +12,7 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 import { Reward, PointTransaction } from '../types';
-import { getCurrentUser, getTransactions } from '../services/storageService';
-import { MOCK_REWARDS } from '../data/mockData';
+import { getCurrentUser, getTransactions, getRewards } from '../services/storageService';
 import RedeemModal from '../components/RedeemModal';
 
 export default function Rewards() {
@@ -22,10 +21,12 @@ export default function Rewards() {
     const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showHowToEarn, setShowHowToEarn] = useState(false);
+    const [rewardsList, setRewardsList] = useState<Reward[]>([]);
 
     useEffect(() => {
         const loadData = async () => {
             setTransactions(await getTransactions());
+            setRewardsList(await getRewards());
         };
         loadData();
     }, []);
@@ -125,7 +126,7 @@ export default function Rewards() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {MOCK_REWARDS.map((reward) => {
+                    {rewardsList.map((reward) => {
                         const canAfford = user.points >= reward.cost;
                         const isLowStock = reward.stock < 10;
 

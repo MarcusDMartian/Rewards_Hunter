@@ -166,10 +166,10 @@ describe('storageService', () => {
     });
 
     // ---- updateUserPoints ----
-    it('updateUserPoints() should update local user points', async () => {
+    it('updateUserPoints() should return current user points unchanged since state is no longer managed in localstorage', async () => {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(mockUser));
         await updateUserPoints(50);
         const user = getCurrentUser();
-        expect(user.points).toBe(150);
+        expect(user.points).toBe(100);
     });
 });

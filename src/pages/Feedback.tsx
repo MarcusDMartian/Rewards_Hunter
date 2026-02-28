@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/apiClient';
 
 type TargetType = 'company' | 'manager' | 'hr';
 type TemplateType = 'start_stop_continue' | 'nps' | 'four_l' | 'open';
@@ -35,16 +36,20 @@ interface FeedbackEntry {
     submittedAt: string;
 }
 
-const FEEDBACK_KEY = 'rh_feedback_history';
+const FEEDBACK_API_ENDPOINT = '/feedback';
 
-function saveFeedback(entry: FeedbackEntry) {
-    const existing: FeedbackEntry[] = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
-    existing.unshift(entry);
-    localStorage.setItem(FEEDBACK_KEY, JSON.stringify(existing));
+async function saveFeedback(entry: Omit<FeedbackEntry, 'id' | 'submittedAt'>) {
+    const { data } = await api.post(FEEDBACK_API_ENDPOINT, entry);
+    return data;
 }
 
-function getFeedbackHistory(): FeedbackEntry[] {
-    return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]');
+async function getFeedbackHistory(): Promise<FeedbackEntry[]> {
+    try {
+        const { data } = await api.get(FEEDBACK_API_ENDPOINT);
+        return data;
+    } catch {
+        return [];
+    }
 }
 
 export default function Feedback() {
@@ -68,8 +73,12 @@ export default function Feedback() {
 
     const isAdminOrHR = currentUser?.role === 'Admin' || currentUser?.role === 'Superadmin' || currentUser?.role === 'SystemAdmin';
 
+    const loadHistory = async () => {
+        setHistory(await getFeedbackHistory());
+    };
+
     useEffect(() => {
-        setHistory(getFeedbackHistory());
+        loadHistory();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -78,8 +87,7 @@ export default function Feedback() {
 
         await new Promise((r) => setTimeout(r, 1000));
 
-        const entry: FeedbackEntry = {
-            id: `fb_${Date.now()}`,
+        const newEntry = {
             target,
             template,
             npsScore: template === 'nps' ? npsScore : undefined,
@@ -91,15 +99,18 @@ export default function Feedback() {
             learned: template === 'four_l' ? learned : undefined,
             lacked: template === 'four_l' ? lacked : undefined,
             longedFor: template === 'four_l' ? longedFor : undefined,
-            submittedAt: new Date().toISOString(),
         };
 
-        saveFeedback(entry);
-        setHistory(getFeedbackHistory());
-
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        addToast('🛡️ Feedback submitted anonymously!', 'success');
+        try {
+            await saveFeedback(newEntry);
+            await loadHistory();
+            setIsSubmitted(true);
+            addToast('🛡️ Feedback submitted anonymously!', 'success');
+        } catch {
+            addToast('Failed to submit feedback', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
 
         setTimeout(() => {
             setIsSubmitted(false);
@@ -116,7 +127,7 @@ export default function Feedback() {
     };
 
     // Summary calculations for admin
-    const allFeedback = getFeedbackHistory();
+    const allFeedback = history;
     const npsEntries = allFeedback.filter(f => f.template === 'nps' && f.npsScore != null);
     const avgNps = npsEntries.length > 0 ? (npsEntries.reduce((s, f) => s + (f.npsScore || 0), 0) / npsEntries.length).toFixed(1) : 'N/A';
     const promoters = npsEntries.filter(f => (f.npsScore || 0) >= 9).length;
@@ -171,8 +182,8 @@ export default function Feedback() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                                    : 'text-slate-500 dark:text-slate-400'
+                                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400'
                                 }`}
                         >
                             <Icon className="w-4 h-4" />

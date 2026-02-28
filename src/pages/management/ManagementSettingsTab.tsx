@@ -5,18 +5,41 @@
 import React, { useState } from 'react';
 import { Building2, Target, Save } from 'lucide-react';
 import { ManagementTabProps } from './managementTypes';
-import { STORAGE_KEYS } from '../../constants/storageKeys';
+import api from '../../services/apiClient';
 
 const ManagementSettingsTab: React.FC<ManagementTabProps> = ({ organization }) => {
     const [orgName, setOrgName] = useState(organization?.name || '');
     const [pointRules, setPointRules] = useState({ idea_created: 50, kudos_sent: 10, kudos_received: 15, daily_login: 5 });
     const [settingsSaved, setSettingsSaved] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSave = () => {
-        localStorage.setItem(STORAGE_KEYS.POINT_RULES, JSON.stringify(pointRules));
-        setSettingsSaved(true);
-        setTimeout(() => setSettingsSaved(false), 2000);
+    React.useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const { data } = await api.get('/settings/point-rules');
+                if (data) setPointRules(data);
+            } catch (err) {
+                // Keep default if fail to fetch
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadSettings();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            await api.post('/settings/point-rules', pointRules);
+            setSettingsSaved(true);
+            setTimeout(() => setSettingsSaved(false), 2000);
+        } catch (err) {
+            console.error('Failed to save settings:', err);
+        }
     };
+
+    if (isLoading) {
+        return <div className="p-8 text-center text-slate-500">Loading settings...</div>;
+    }
 
     return (
         <div className="space-y-6">

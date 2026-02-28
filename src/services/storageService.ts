@@ -48,20 +48,11 @@ export async function getAllUsers(orgId?: string): Promise<User[]> {
     }
 }
 
-export async function updateUserPoints(amount: number): Promise<User> {
+export async function updateUserPoints(_amount: number): Promise<User> {
     // Points are managed server-side via gamification events
-    // This is a no-op for forward compatibility — the server handles point updates
+    // Leaving this function as a placeholder if triggered manually by components,
+    // but actual state should be updated by re-fetching the user from the backend.
     const user = getCurrentUser();
-    user.points += amount;
-    user.monthlyPoints += amount;
-    user.quarterlyPoints += amount;
-
-    while (user.points >= user.nextLevelPoints) {
-        user.level += 1;
-        user.nextLevelPoints = Math.floor(user.nextLevelPoints * 1.5);
-    }
-
-    saveCurrentUser(user);
     return user;
 }
 
@@ -257,7 +248,8 @@ export function setOnboardingComplete(): void {
 // RESET ALL DATA
 // ============================================
 export function resetAllData(): void {
-    Object.values(STORAGE_KEYS).forEach(key => {
-        localStorage.removeItem(key);
-    });
+    // Kept only for clearing session auth
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_ORG);
 }
