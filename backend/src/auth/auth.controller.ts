@@ -9,6 +9,7 @@ import {
   RegisterOrgDto,
   JoinRequestDto,
   CheckDomainDto,
+  SendOtpDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard, Roles } from './roles.guard';
@@ -16,11 +17,16 @@ import { CurrentUser } from './current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('check-domain')
   async checkDomain(@Body() dto: CheckDomainDto) {
     return this.authService.checkDomain(dto.email);
+  }
+
+  @Post('send-otp')
+  async sendOtp(@Body() dto: SendOtpDto) {
+    return this.authService.sendOtp(dto.email);
   }
 
   @Post('login')

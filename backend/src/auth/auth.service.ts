@@ -18,7 +18,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   // Extract domain from email
   private extractDomain(email: string): string {
@@ -45,6 +45,13 @@ export class AuthService {
       organization: org,
       userExists: !!existingUser,
     };
+  }
+
+  // Send OTP
+  async sendOtp(email: string) {
+    // Stub implementation: log and return success
+    console.log(`[Stub] Sending OTP to ${email}: 123456`);
+    return { success: true };
   }
 
   // Login with email and password
@@ -86,8 +93,11 @@ export class AuthService {
     };
   }
 
-  // Register new organization
   async registerOrg(dto: RegisterOrgDto) {
+    if (dto.otp !== '123456') {
+      throw new UnauthorizedException('Invalid OTP code');
+    }
+
     const domain = this.extractDomain(dto.email);
 
     // Check if domain exists
@@ -150,8 +160,11 @@ export class AuthService {
     };
   }
 
-  // Submit join request
   async submitJoinRequest(dto: JoinRequestDto) {
+    if (dto.otp !== '123456') {
+      throw new UnauthorizedException('Invalid OTP code');
+    }
+
     const org = await this.prisma.organization.findUnique({
       where: { id: dto.orgId },
     });

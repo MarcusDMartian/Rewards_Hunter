@@ -2,9 +2,14 @@
 // AUTH DTOs
 // ============================================
 
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class CheckDomainDto {
+  @IsEmail()
+  email: string;
+}
+
+export class SendOtpDto {
   @IsEmail()
   email: string;
 }
@@ -33,6 +38,10 @@ export class RegisterOrgDto {
   @IsString()
   @IsNotEmpty()
   orgName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 }
 
 export class JoinRequestDto {
@@ -50,4 +59,8 @@ export class JoinRequestDto {
   @IsString()
   @IsNotEmpty()
   orgId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 }
