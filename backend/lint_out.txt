@@ -1,0 +1,51 @@
+
+> backend@0.0.1 lint
+> eslint src test --fix
+
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/auth/auth.service.ts
+  343:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  347:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/feedback/feedback.controller.ts
+  30:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/feedback/feedback.service.spec.ts
+  123:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/feedback/feedback.service.ts
+  22:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/gamification/gamification.service.ts
+  251:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/ideas/ideas.service.ts
+   13:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/kudos/kudos.service.ts
+   94:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/main.ts
+  57:1  warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/rewards/rewards.service.ts
+  116:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/martian/Documents/Projects/Rewards_Hunter/backend/src/users/users.service.ts
+   13:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 24 problems (0 errors, 24 warnings)
+

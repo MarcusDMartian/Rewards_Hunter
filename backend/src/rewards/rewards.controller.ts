@@ -17,6 +17,7 @@ import { RewardsService } from './rewards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -24,7 +25,7 @@ export class RewardsController {
   constructor(private rewardsService: RewardsService) {}
 
   @Get('wallet')
-  async getWallet(@CurrentUser() user: any) {
+  async getWallet(@CurrentUser() user: ReqUser) {
     return this.rewardsService.getWallet(user.id);
   }
 
@@ -34,12 +35,12 @@ export class RewardsController {
   }
 
   @Post('rewards/:id/redeem')
-  async redeem(@Param('id') id: string, @CurrentUser() user: any) {
+  async redeem(@Param('id') id: string, @CurrentUser() user: ReqUser) {
     return this.rewardsService.redeem(user.id, id);
   }
 
   @Get('redemptions')
-  async getRedemptions(@CurrentUser() user: any) {
+  async getRedemptions(@CurrentUser() user: ReqUser) {
     return this.rewardsService.getRedemptions(user.id);
   }
 
@@ -56,7 +57,7 @@ export class RewardsController {
   @Patch('admin/redemptions/:id')
   async processRedemption(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: ReqUser,
     @Body() body: { status: 'Approved' | 'Rejected'; note?: string },
   ) {
     return this.rewardsService.processRedemption(
@@ -87,7 +88,19 @@ export class RewardsController {
   @UseGuards(RolesGuard)
   @Roles('Admin', 'Superadmin', 'SystemAdmin')
   @Patch('admin/rewards/:id')
-  async updateReward(@Param('id') id: string, @Body() body: any) {
+  async updateReward(
+    @Param('id') id: string,
+    @Body()
+    body: Partial<{
+      name: string;
+      description: string;
+      image: string;
+      cost: number;
+      type: string;
+      stock: number;
+      isActive: boolean;
+    }>,
+  ) {
     return this.rewardsService.updateReward(id, body);
   }
 

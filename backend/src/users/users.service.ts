@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(orgId?: string) {
     const where: any = {};
@@ -102,7 +102,8 @@ export class UsersService {
   }
 
   private formatUser(user: any) {
-    const { passwordHash, ...rest } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...safeUser } = user;
     const badges =
       user.userBadges?.map((ub: any) => ({
         id: ub.badge.id,
@@ -114,7 +115,7 @@ export class UsersService {
       })) || [];
 
     return {
-      ...rest,
+      ...safeUser,
       badges,
       team: user.team?.name || 'General',
       teamId: user.teamId || '',

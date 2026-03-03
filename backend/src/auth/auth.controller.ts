@@ -14,10 +14,11 @@ import {
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard, Roles } from './roles.guard';
 import { CurrentUser } from './current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService) {}
 
   @Post('check-domain')
   async checkDomain(@Body() dto: CheckDomainDto) {
@@ -46,7 +47,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMe(@CurrentUser() user: any) {
+  async getMe(@CurrentUser() user: ReqUser) {
     return user;
   }
 

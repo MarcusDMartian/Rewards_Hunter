@@ -2,7 +2,7 @@
 // DASHBOARD PAGE - HOME / MAIN VIEW
 // ============================================
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Flame,
@@ -18,6 +18,28 @@ import { getCurrentUser, getMissions, claimMission, getIdeas } from '../services
 import { processGameEvent } from '../services/gamificationService';
 import usePageTitle from '../hooks/usePageTitle';
 import { Mission, KaizenIdea } from '../types';
+
+const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+};
+
+const getImpactColor = (impact: string) => {
+    switch (impact) {
+        case 'Speed':
+            return 'text-blue-500 bg-blue-100 dark:bg-blue-900/30';
+        case 'Quality':
+            return 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30';
+        case 'Cost':
+            return 'text-amber-500 bg-amber-100 dark:bg-amber-900/30';
+        case 'Safety':
+            return 'text-red-500 bg-red-100 dark:bg-red-900/30';
+        default:
+            return 'text-slate-500 bg-slate-100 dark:bg-slate-900/30';
+    }
+};
 
 export default function Dashboard() {
     usePageTitle('Dashboard');
@@ -46,33 +68,13 @@ export default function Dashboard() {
     };
 
     // XP progress data for pie chart
-    const progressPercent = Math.min((user.points / user.nextLevelPoints) * 100, 100);
-    const pieData = [
-        { value: progressPercent },
-        { value: 100 - progressPercent },
-    ];
-
-    const getTimeOfDay = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
-    };
-
-    const getImpactColor = (impact: string) => {
-        switch (impact) {
-            case 'Speed':
-                return 'text-blue-500 bg-blue-100 dark:bg-blue-900/30';
-            case 'Quality':
-                return 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30';
-            case 'Cost':
-                return 'text-amber-500 bg-amber-100 dark:bg-amber-900/30';
-            case 'Safety':
-                return 'text-red-500 bg-red-100 dark:bg-red-900/30';
-            default:
-                return 'text-slate-500 bg-slate-100 dark:bg-slate-900/30';
-        }
-    };
+    const pieData = React.useMemo(() => {
+        const progressPercent = Math.min((user.points / user.nextLevelPoints) * 100, 100);
+        return [
+            { value: progressPercent },
+            { value: 100 - progressPercent },
+        ];
+    }, [user.points, user.nextLevelPoints]);
 
     return (
         <div className="space-y-6">

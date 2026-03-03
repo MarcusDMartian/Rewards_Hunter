@@ -4,8 +4,10 @@ import './index.css'
 import App from './App.tsx'
 
 async function enableMocking() {
-    // Enable Mocking in development environments only
-    if (process.env.NODE_ENV !== 'development') {
+    // Enable Mocking only if the environment flag requires it
+    const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+
+    if (!useMockData) {
         return;
     }
 

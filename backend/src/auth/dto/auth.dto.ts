@@ -2,7 +2,7 @@
 // AUTH DTOs
 // ============================================
 
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class CheckDomainDto {
   @IsEmail()

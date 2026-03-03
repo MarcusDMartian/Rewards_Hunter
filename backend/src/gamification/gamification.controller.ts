@@ -6,6 +6,7 @@ import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { GamificationService } from './gamification.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -14,7 +15,7 @@ export class GamificationController {
 
   @Post('events')
   async processEvent(
-    @CurrentUser() user: any,
+    @CurrentUser() user: ReqUser,
     @Body() body: { eventType: string; referenceId?: string },
   ) {
     return this.gamificationService.processEvent(
@@ -25,17 +26,17 @@ export class GamificationController {
   }
 
   @Get('missions/today')
-  async getMissions(@CurrentUser() user: any) {
+  async getMissions(@CurrentUser() user: ReqUser) {
     return this.gamificationService.getUserMissions(user.id);
   }
 
   @Post('missions/:id/claim')
-  async claimMission(@Param('id') id: string, @CurrentUser() user: any) {
+  async claimMission(@Param('id') id: string, @CurrentUser() user: ReqUser) {
     return this.gamificationService.claimMission(user.id, id);
   }
 
   @Get('badges')
-  async getBadges(@CurrentUser() user: any) {
+  async getBadges(@CurrentUser() user: ReqUser) {
     return this.gamificationService.getAllBadges(user.id);
   }
 }

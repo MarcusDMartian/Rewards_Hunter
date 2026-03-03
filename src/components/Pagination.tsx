@@ -33,6 +33,7 @@ export default function Pagination({ currentPage, totalItems, itemsPerPage, onPa
             <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage <= 1}
+                aria-label="Previous page"
                 className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronLeft className="w-4 h-4" />
@@ -46,8 +47,8 @@ export default function Pagination({ currentPage, totalItems, itemsPerPage, onPa
                         key={p}
                         onClick={() => onPageChange(p)}
                         className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${p === currentPage
-                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                                : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/50'
+                            ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/50'
                             }`}
                     >
                         {p}
@@ -58,6 +59,7 @@ export default function Pagination({ currentPage, totalItems, itemsPerPage, onPa
             <button
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage >= totalPages}
+                aria-label="Next page"
                 className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronRight className="w-4 h-4" />

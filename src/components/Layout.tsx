@@ -145,7 +145,10 @@ export default function Layout({ children }: LayoutProps) {
                             )}
                         </button>
 
-                        <button className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors relative">
+                        <button
+                            aria-label="View notifications"
+                            className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors relative"
+                        >
                             <Bell className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
                         </button>
@@ -167,6 +170,7 @@ export default function Layout({ children }: LayoutProps) {
 
                         <button
                             onClick={handleLogout}
+                            aria-label="Logout"
                             className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 hover:text-red-500"
                             title="Logout"
                         >
@@ -195,6 +199,7 @@ export default function Layout({ children }: LayoutProps) {
                         </button>
                         <button
                             onClick={toggleTheme}
+                            aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
                             className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors"
                         >
                             {isDark ? (
@@ -204,7 +209,10 @@ export default function Layout({ children }: LayoutProps) {
                             )}
                         </button>
 
-                        <button className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors relative">
+                        <button
+                            aria-label="View notifications"
+                            className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors relative"
+                        >
                             <Bell className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                         </button>

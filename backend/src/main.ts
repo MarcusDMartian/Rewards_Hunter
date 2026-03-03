@@ -4,6 +4,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,7 +12,11 @@ async function bootstrap() {
 
   // Enable CORS with fixed settings for production
   app.enableCors({
-    origin: ['https://rewardshunter.vercel.app', 'http://localhost:5173', 'https://rewardhunter.fastyear.tech'], // Explicitly allow Vercel and local dev
+    origin: [
+      'https://rewardshunter.vercel.app',
+      'http://localhost:5173',
+      'https://rewardhunter.fastyear.tech',
+    ], // Explicitly allow Vercel and local dev
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
@@ -30,7 +35,7 @@ async function bootstrap() {
 
   // Simple Root Route for Health Check
   const server = app.getHttpAdapter().getInstance();
-  server.get('/', (req: any, res: any) => {
+  server.get('/', (req: Request, res: Response) => {
     res.status(200).json({
       status: 'ok',
       message: 'Reward Hunter API is Live! 🚀',

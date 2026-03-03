@@ -12,13 +12,16 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterOrgDto, JoinRequestDto } from './dto/auth.dto';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   // Extract domain from email
   private extractDomain(email: string): string {
@@ -49,9 +52,44 @@ export class AuthService {
 
   // Send OTP
   async sendOtp(email: string) {
-    // Stub implementation: log and return success
-    console.log(`[Stub] Sending OTP to ${email}: 123456`);
-    return { success: true };
+    // Generate a 6-digit OTP
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Invalidate old OTPs for this email
+    await this.prisma.otpRecord.updateMany({
+      where: { email: email.toLowerCase(), isUsed: false },
+      data: { isUsed: true },
+    });
+
+    // Save new OTP
+    await this.prisma.otpRecord.create({
+      data: {
+        email: email.toLowerCase(),
+        code,
+        expiresAt,
+      },
+    });
+
+    try {
+      if (process.env.RESEND_API_KEY) {
+        await resend.emails.send({
+          from: 'Reward Hunter <onboarding@resend.dev>',
+          to: email,
+          subject: 'Your Reward Hunter Verification Code',
+          html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
+        });
+        console.log(`[OTP] Sent real email to ${email}`);
+      } else {
+        console.log(
+          `[OTP Stub] RESEND_API_KEY missing. Sending OTP to ${email}: ${code}`,
+        );
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('[OTP Error] Failed to send email via Resend', error);
+      throw new ConflictException('Failed to send OTP email');
+    }
   }
 
   // Login with email and password
@@ -94,9 +132,25 @@ export class AuthService {
   }
 
   async registerOrg(dto: RegisterOrgDto) {
-    if (dto.otp !== '123456') {
-      throw new UnauthorizedException('Invalid OTP code');
+    const otpRecord = await this.prisma.otpRecord.findFirst({
+      where: {
+        email: dto.email.toLowerCase(),
+        code: dto.otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
+      throw new UnauthorizedException('Invalid or expired OTP code');
     }
+
+    // Mark as used
+    await this.prisma.otpRecord.update({
+      where: { id: otpRecord.id },
+      data: { isUsed: true },
+    });
 
     const domain = this.extractDomain(dto.email);
 
@@ -161,9 +215,25 @@ export class AuthService {
   }
 
   async submitJoinRequest(dto: JoinRequestDto) {
-    if (dto.otp !== '123456') {
-      throw new UnauthorizedException('Invalid OTP code');
+    const otpRecord = await this.prisma.otpRecord.findFirst({
+      where: {
+        email: dto.email.toLowerCase(),
+        code: dto.otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
+      throw new UnauthorizedException('Invalid or expired OTP code');
     }
+
+    // Mark as used
+    await this.prisma.otpRecord.update({
+      where: { id: otpRecord.id },
+      data: { isUsed: true },
+    });
 
     const org = await this.prisma.organization.findUnique({
       where: { id: dto.orgId },
@@ -271,7 +341,8 @@ export class AuthService {
 
   // Format user for API response (strip password hash)
   private formatUser(user: any) {
-    const { passwordHash, ...rest } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...safeUser } = user;
     const badges =
       user.userBadges?.map((ub: any) => ({
         id: ub.badge.id,
@@ -283,7 +354,7 @@ export class AuthService {
       })) || [];
 
     return {
-      ...rest,
+      ...safeUser,
       badges,
       team: user.team?.name || 'General',
       teamId: user.teamId || '',

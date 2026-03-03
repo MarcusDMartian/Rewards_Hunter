@@ -323,3 +323,18 @@ model FeedbackIdentityMap {
   feedback FeedbackEntry @relation(fields: [feedbackId], references: [id])
   user     User          @relation(fields: [userId], references: [id])
 }
+
+// ============================================
+// AUTHENTICATION & OTP
+// ============================================
+
+model OtpRecord {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  code      String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

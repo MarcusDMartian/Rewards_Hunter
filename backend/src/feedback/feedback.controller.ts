@@ -7,6 +7,7 @@ import { FeedbackService } from './feedback.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller('feedback')
 @UseGuards(JwtAuthGuard)
@@ -19,8 +20,8 @@ export class FeedbackController {
   }
 
   @Post()
-  async submit(
-    @CurrentUser() user: any,
+  async create(
+    @CurrentUser() user: ReqUser,
     @Body()
     body: {
       templateId: string;

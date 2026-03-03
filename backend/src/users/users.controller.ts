@@ -15,6 +15,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller()
 export class UsersController {
@@ -35,13 +36,24 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'Superadmin', 'SystemAdmin')
   @Patch('users/:id')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(
+    @Param('id') id: string,
+    @Body()
+    body: Partial<{
+      name: string;
+      avatar: string;
+      role: string;
+      teamId: string;
+      position: string;
+      isActive: boolean;
+    }>,
+  ) {
     return this.usersService.update(id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('teams')
-  async getTeams(@CurrentUser() user: any) {
+  async getTeams(@CurrentUser() user: ReqUser) {
     return this.usersService.getTeams(user.orgId);
   }
 
@@ -57,7 +69,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Superadmin', 'Admin')
   @Get('admin/join-requests')
-  async getJoinRequests(@CurrentUser() user: any) {
+  async getJoinRequests(@CurrentUser() user: ReqUser) {
     return this.usersService.getJoinRequests(user.orgId);
   }
 

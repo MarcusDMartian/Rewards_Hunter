@@ -14,6 +14,7 @@ import {
 import { KudosService } from './kudos.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller('kudos')
 @UseGuards(JwtAuthGuard)
@@ -27,7 +28,7 @@ export class KudosController {
 
   @Post()
   async create(
-    @CurrentUser() user: any,
+    @CurrentUser() user: ReqUser,
     @Body() body: { receiverId: string; coreValue: string; message: string },
   ) {
     return this.kudosService.create({
@@ -37,7 +38,7 @@ export class KudosController {
   }
 
   @Post(':id/like')
-  async like(@Param('id') id: string, @CurrentUser() user: any) {
+  async like(@Param('id') id: string, @CurrentUser() user: ReqUser) {
     return this.kudosService.toggleLike(id, user.id);
   }
 }

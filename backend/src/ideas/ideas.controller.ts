@@ -16,6 +16,7 @@ import { IdeasService } from './ideas.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { ReqUser } from '../common/interfaces/req-user.interface';
 
 @Controller('ideas')
 @UseGuards(JwtAuthGuard)
@@ -37,7 +38,7 @@ export class IdeasController {
 
   @Post()
   async create(
-    @CurrentUser() user: any,
+    @CurrentUser() user: ReqUser,
     @Body()
     body: { title: string; problem: string; proposal: string; impact: string },
   ) {
@@ -49,19 +50,19 @@ export class IdeasController {
   }
 
   @Post(':id/vote')
-  async vote(@Param('id') id: string, @CurrentUser() user: any) {
+  async vote(@Param('id') id: string, @CurrentUser() user: ReqUser) {
     return this.ideasService.toggleVote(id, user.id);
   }
 
   @Post(':id/follow')
-  async follow(@Param('id') id: string, @CurrentUser() user: any) {
+  async follow(@Param('id') id: string, @CurrentUser() user: ReqUser) {
     return this.ideasService.toggleFollow(id, user.id);
   }
 
   @Post(':id/comments')
   async addComment(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: ReqUser,
     @Body() body: { text: string },
   ) {
     return this.ideasService.addComment(id, user.id, body.text);
