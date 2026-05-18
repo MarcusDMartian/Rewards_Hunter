@@ -5,6 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IdeasService } from './ideas.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 import { NotFoundException } from '@nestjs/common';
 
 const mockIdea = {
@@ -60,6 +61,10 @@ const mockPrisma = {
   },
 };
 
+const mockGamification = {
+  processEvent: jest.fn().mockResolvedValue({ points: 50 }),
+};
+
 describe('IdeasService', () => {
   let service: IdeasService;
 
@@ -68,6 +73,7 @@ describe('IdeasService', () => {
       providers: [
         IdeasService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: GamificationService, useValue: mockGamification },
       ],
     }).compile();
 
@@ -181,12 +187,66 @@ describe('IdeasService', () => {
 
   describe('updateStatus', () => {
     it('should update idea status', async () => {
+      mockPrisma.kaizenIdea.findUnique.mockResolvedValue({
+        id: 'idea1',
+        status: 'New',
+        creatorId: 'u1',
+      });
       mockPrisma.kaizenIdea.update.mockResolvedValue({
         id: 'idea1',
         status: 'Approved',
       });
       const result = await service.updateStatus('idea1', 'Approved');
       expect(result.status).toBe('Approved');
+      expect(mockGamification.processEvent).toHaveBeenCalledWith(
+        'u1',
+        'idea_approved',
+        'idea1',
+      );
+    });
+
+    it('should throw NotFoundException when idea missing', async () => {
+      mockPrisma.kaizenIdea.findUnique.mockResolvedValue(null);
+      await expect(service.updateStatus('bad-id', 'Approved')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should not double-award points when status unchanged', async () => {
+      mockPrisma.kaizenIdea.findUnique.mockResolvedValue({
+        id: 'idea1',
+        status: 'Approved',
+        creatorId: 'u1',
+      });
+      mockPrisma.kaizenIdea.update.mockResolvedValue({
+        id: 'idea1',
+        status: 'Approved',
+      });
+      await service.updateStatus('idea1', 'Approved');
+      expect(mockGamification.processEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('create with gamification', () => {
+    it('should trigger idea_created event after creation', async () => {
+      mockPrisma.kaizenIdea.create.mockResolvedValue({
+        ...mockIdea,
+        votes: [],
+        comments: [],
+        follows: [],
+      });
+      await service.create({
+        title: 'Test',
+        problem: 'P',
+        proposal: 'S',
+        impact: 'Cost',
+        creatorId: 'u1',
+      });
+      expect(mockGamification.processEvent).toHaveBeenCalledWith(
+        'u1',
+        'idea_created',
+        'idea1',
+      );
     });
   });
 });

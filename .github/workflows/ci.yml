@@ -2,12 +2,16 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+permissions:
+  contents: read
 
 jobs:
   frontend-build-test:
+    name: Frontend (lint, test, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +28,18 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+        env:
+          VITE_API_URL: https://example.com/api
+          VITE_APP_ENV: ci
+      - name: Upload frontend bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
 
   backend-build-test:
+    name: Backend (test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,7 +49,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
@@ -46,3 +60,33 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  security-audit:
+    name: Dependency audit (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Frontend audit
+        run: npm audit --omit=dev --audit-level=high || true
+      - name: Backend audit
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high || true
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify no .env files committed
+        run: |
+          if git ls-files | grep -E '^(\.env|backend/\.env)([^.]|$)'; then
+            echo "::error::Found committed .env file. Only .env.example may be committed."
+            exit 1
+          fi
+          echo "OK: no .env files in repo"

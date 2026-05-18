@@ -33,6 +33,12 @@ const mockPrisma = {
     create: jest.fn(),
     findFirst: jest.fn(),
   },
+  otpRecord: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -171,35 +177,64 @@ describe('AuthService', () => {
   // ============================================
 
   describe('registerOrg', () => {
+    const validOtp = {
+      id: 'otp1',
+      email: 'admin@new.com',
+      code: '123456',
+      isUsed: false,
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+
+    it('should throw UnauthorizedException when OTP invalid', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(null);
+      await expect(
+        service.registerOrg({
+          email: 'admin@new.com',
+          password: 'Password1!',
+          name: 'Admin',
+          orgName: 'New Org',
+          otp: 'wrong',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
     it('should throw ConflictException if domain exists', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue({ id: 'org1' });
       await expect(
         service.registerOrg({
           email: 'admin@existing.com',
-          password: '123456',
+          password: 'Password1!',
           name: 'Admin',
           orgName: 'Existing Org',
+          otp: '123456',
         }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should throw ConflictException if user email exists', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue(null);
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1' });
       await expect(
         service.registerOrg({
           email: 'admin@new.com',
-          password: '123456',
+          password: 'Password1!',
           name: 'Admin',
           orgName: 'New Org',
+          otp: '123456',
         }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should create org and return token on success', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue(null);
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      mockPrisma.$transaction.mockImplementation(async (cb) => {
+      mockPrisma.$transaction.mockImplementation(async (cb: any) => {
         return cb({
           organization: {
             create: jest.fn().mockResolvedValue({
@@ -225,9 +260,10 @@ describe('AuthService', () => {
 
       const result = await service.registerOrg({
         email: 'admin@new.com',
-        password: '123456',
+        password: 'Password1!',
         name: 'Admin',
         orgName: 'New Org',
+        otp: '123456',
       });
 
       expect(result.accessToken).toBe('mock-jwt-token');
@@ -240,32 +276,61 @@ describe('AuthService', () => {
   // ============================================
 
   describe('submitJoinRequest', () => {
+    const validOtp = {
+      id: 'otp1',
+      email: 'user@test.com',
+      code: '123456',
+      isUsed: false,
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+
+    it('should throw UnauthorizedException when OTP invalid', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(null);
+      await expect(
+        service.submitJoinRequest({
+          email: 'user@test.com',
+          password: 'Password1!',
+          name: 'User',
+          orgId: 'org1',
+          otp: 'wrong',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
     it('should throw NotFoundException if org not found', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue(null);
       await expect(
         service.submitJoinRequest({
           email: 'user@test.com',
-          password: '123456',
+          password: 'Password1!',
           name: 'User',
           orgId: 'bad-org',
+          otp: '123456',
         }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ConflictException if user exists', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue({ id: 'org1' });
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1' });
       await expect(
         service.submitJoinRequest({
           email: 'user@test.com',
-          password: '123456',
+          password: 'Password1!',
           name: 'User',
           orgId: 'org1',
+          otp: '123456',
         }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should create join request on success', async () => {
+      mockPrisma.otpRecord.findFirst.mockResolvedValue(validOtp);
+      mockPrisma.otpRecord.update.mockResolvedValue(validOtp);
       mockPrisma.organization.findUnique.mockResolvedValue({ id: 'org1' });
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.joinRequest.findFirst.mockResolvedValue(null);
@@ -273,9 +338,10 @@ describe('AuthService', () => {
 
       const result = await service.submitJoinRequest({
         email: 'user@test.com',
-        password: '123456',
+        password: 'Password1!',
         name: 'User',
         orgId: 'org1',
+        otp: '123456',
       });
       expect(result.success).toBe(true);
     });

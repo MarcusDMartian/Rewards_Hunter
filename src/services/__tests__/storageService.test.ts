@@ -165,11 +165,25 @@ describe('storageService', () => {
         expect(result.status).toBe('Pending');
     });
 
-    // ---- updateUserPoints ----
-    it('updateUserPoints() should return current user points unchanged since state is no longer managed in localstorage', async () => {
+    // ---- updateUserPoints (deprecated, delegates to refreshCurrentUser) ----
+    it('updateUserPoints() should re-fetch user from API and update local cache', async () => {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(mockUser));
-        await updateUserPoints(50);
-        const user = getCurrentUser();
-        expect(user.points).toBe(100);
+        const refreshed = { ...mockUser, points: 200 };
+        mockApi.get.mockResolvedValue({ data: refreshed });
+
+        const result = await updateUserPoints(50);
+
+        expect(mockApi.get).toHaveBeenCalledWith('/auth/me');
+        expect(result?.points).toBe(200);
+        const cached = getCurrentUser();
+        expect(cached.points).toBe(200);
+    });
+
+    it('updateUserPoints() should return null when API call fails', async () => {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(mockUser));
+        mockApi.get.mockRejectedValue(new Error('Network error'));
+
+        const result = await updateUserPoints(50);
+        expect(result).toBeNull();
     });
 });

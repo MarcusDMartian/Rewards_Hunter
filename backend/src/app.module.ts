@@ -18,7 +18,10 @@ import { FeedbackModule } from './feedback/feedback.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 60_000, limit: 60 },
+      { name: 'long', ttl: 3_600_000, limit: 1000 },
+    ]),
     PrismaModule,
     AuthModule,
     UsersModule,
