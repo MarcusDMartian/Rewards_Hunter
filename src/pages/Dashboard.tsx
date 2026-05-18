@@ -14,10 +14,11 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { getCurrentUser, getMissions, claimMission, getIdeas } from '../services/storageService';
+import { getMissions, claimMission, getIdeas } from '../services/storageService';
 import { processGameEvent } from '../services/gamificationService';
+import { useAuth } from '../contexts/AuthContext';
 import usePageTitle from '../hooks/usePageTitle';
-import { Mission, KaizenIdea } from '../types';
+import { Mission, KaizenIdea, User } from '../types';
 
 const getTimeOfDay = () => {
     const hour = new Date().getHours();
@@ -43,7 +44,8 @@ const getImpactColor = (impact: string) => {
 
 export default function Dashboard() {
     usePageTitle('Dashboard');
-    const [user, setUser] = useState(getCurrentUser());
+    const { currentUser, refreshAuth } = useAuth();
+    const user = (currentUser ?? ({} as User));
     const [missions, setMissions] = useState<Mission[]>([]);
     const [recentIdeas, setRecentIdeas] = useState<KaizenIdea[]>([]);
 
@@ -55,16 +57,18 @@ export default function Dashboard() {
             ]);
             setMissions(fetchedMissions);
             setRecentIdeas(fetchedIdeas.slice(0, 3));
-            // Auto-trigger daily login for streak tracking
+            // Daily login is the one event that does NOT have a natural mutation
+            // trigger on the server, so the client still emits it explicitly.
             await processGameEvent('daily_login');
+            await refreshAuth();
         };
         loadData();
-    }, []);
+    }, [refreshAuth]);
 
     const handleClaimMission = async (missionId: string) => {
         const { missions: updatedMissions } = await claimMission(missionId);
         setMissions(updatedMissions);
-        setUser(getCurrentUser());
+        await refreshAuth();
     };
 
     // XP progress data for pie chart

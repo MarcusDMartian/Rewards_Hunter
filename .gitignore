@@ -19,8 +19,19 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Local env files
-.env*.local
+# Local env files (only .env.example may be committed)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+backend/.env
+backend/.env.local
+backend/.env.*.local
+backend/.env.production
+backend/.env.development
+backend/.env.staging
 
 # IDEs and editors
 .idea/

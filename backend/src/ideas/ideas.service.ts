@@ -2,12 +2,31 @@
 // IDEAS SERVICE - Kaizen Ideas CRUD
 // ============================================
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class IdeasService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(IdeasService.name);
+  constructor(
+    private prisma: PrismaService,
+    private gamification: GamificationService,
+  ) {}
+
+  private async safeProcessEvent(
+    userId: string,
+    eventType: string,
+    referenceId?: string,
+  ) {
+    try {
+      await this.gamification.processEvent(userId, eventType, referenceId);
+    } catch (err) {
+      this.logger.warn(
+        `Gamification event ${eventType} failed for user ${userId}: ${(err as Error).message}`,
+      );
+    }
+  }
 
   async findAll(filter?: string, teamId?: string) {
     const where: any = {};
@@ -97,6 +116,7 @@ export class IdeasService {
       },
     });
 
+    await this.safeProcessEvent(data.creatorId, 'idea_created', idea.id);
     return this.formatIdea(idea);
   }
 
@@ -146,10 +166,28 @@ export class IdeasService {
   }
 
   async updateStatus(ideaId: string, status: string) {
+    const existing = await this.prisma.kaizenIdea.findUnique({
+      where: { id: ideaId },
+      select: { id: true, status: true, creatorId: true },
+    });
+    if (!existing) throw new NotFoundException('Idea not found');
+
     const idea = await this.prisma.kaizenIdea.update({
       where: { id: ideaId },
       data: { status },
     });
+
+    // Award points on transitions into Approved / Implemented (once each)
+    if (status === 'Approved' && existing.status !== 'Approved') {
+      await this.safeProcessEvent(existing.creatorId, 'idea_approved', ideaId);
+    } else if (status === 'Implemented' && existing.status !== 'Implemented') {
+      await this.safeProcessEvent(
+        existing.creatorId,
+        'idea_implemented',
+        ideaId,
+      );
+    }
+
     return idea;
   }
 

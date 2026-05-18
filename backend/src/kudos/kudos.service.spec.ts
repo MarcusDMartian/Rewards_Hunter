@@ -3,8 +3,10 @@
 // ============================================
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { KudosService } from './kudos.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 
 const mockKudos = {
   id: 'k1',
@@ -42,6 +44,10 @@ const mockPrisma = {
   },
 };
 
+const mockGamification = {
+  processEvent: jest.fn().mockResolvedValue({ points: 10 }),
+};
+
 describe('KudosService', () => {
   let service: KudosService;
 
@@ -50,6 +56,7 @@ describe('KudosService', () => {
       providers: [
         KudosService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: GamificationService, useValue: mockGamification },
       ],
     }).compile();
 
@@ -92,6 +99,37 @@ describe('KudosService', () => {
       });
       expect(result.coreValue).toBe('Kaizen');
       expect(result.likes).toBe(0);
+    });
+
+    it('should award points to both sender and receiver', async () => {
+      mockPrisma.kudos.create.mockResolvedValue({ ...mockKudos, likes: [] });
+      await service.create({
+        senderId: 'u1',
+        receiverId: 'u2',
+        coreValue: 'Kaizen',
+        message: 'Great!',
+      });
+      expect(mockGamification.processEvent).toHaveBeenCalledWith(
+        'u1',
+        'kudos_sent',
+        'k1',
+      );
+      expect(mockGamification.processEvent).toHaveBeenCalledWith(
+        'u2',
+        'kudos_received',
+        'k1',
+      );
+    });
+
+    it('should reject self-kudos', async () => {
+      await expect(
+        service.create({
+          senderId: 'u1',
+          receiverId: 'u1',
+          coreValue: 'Kaizen',
+          message: 'Self praise',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

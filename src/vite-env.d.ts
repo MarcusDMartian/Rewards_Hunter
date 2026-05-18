@@ -1,7 +1,10 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-    readonly VITE_GEMINI_API_KEY: string;
+    readonly VITE_API_URL: string;
+    readonly VITE_USE_MOCK_DATA?: string;
+    readonly VITE_SENTRY_DSN?: string;
+    readonly VITE_APP_ENV?: string;
 }
 
 interface ImportMeta {

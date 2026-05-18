@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { KaizenIdea } from '../types';
 import { getIdeas, addIdea, toggleVote, getCurrentUser } from '../services/storageService';
-import { processGameEvent } from '../services/gamificationService';
+import { useAuth } from '../contexts/AuthContext';
 
 import api from '../services/apiClient';
 import Pagination from '../components/Pagination';
@@ -35,6 +35,7 @@ export default function KaizenIdeas() {
     const ITEMS_PER_PAGE = 10;
     const user = getCurrentUser();
     const { addToast } = useToast();
+    const { refreshAuth } = useAuth();
 
     // Form state
     const [title, setTitle] = useState('');
@@ -94,11 +95,9 @@ export default function KaizenIdeas() {
 
         try {
             await addIdea({ title: title.trim(), problem: problem.trim(), proposal: proposal.trim(), impact });
+            await refreshAuth();
 
-            // Auto-trigger gamification
-            await processGameEvent('idea_created');
-
-            addToast('💡 Idea submitted successfully! +50 pts', 'success');
+            addToast('Idea submitted successfully! +50 pts', 'success');
 
             // Reset form
             setTitle('');
