@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterOrgDto, JoinRequestDto } from './dto/auth.dto';
 import * as nodemailer from 'nodemailer';
@@ -66,8 +67,8 @@ export class AuthService {
 
   // Send OTP
   async sendOtp(email: string) {
-    // Generate a 6-digit OTP
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate a 6-digit OTP using CSPRNG
+    const code = randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Invalidate old OTPs for this email

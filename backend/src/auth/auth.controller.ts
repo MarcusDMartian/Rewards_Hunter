@@ -25,7 +25,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   // Light throttle: domain existence check is mostly idempotent
-  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @Throttle({ short: { ttl: 60_000, limit: 20 } })
   @Post('check-domain')
   async checkDomain(@Body() dto: CheckDomainDto) {
     return this.authService.checkDomain(dto.email);
@@ -42,21 +42,21 @@ export class AuthController {
   }
 
   // Strict: 5 login attempts per minute per IP
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ short: { ttl: 60_000, limit: 5 } })
   @Post('login')
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
   // Strict: 3 org registrations per IP per hour
-  @Throttle({ default: { ttl: 3_600_000, limit: 3 } })
+  @Throttle({ long: { ttl: 3_600_000, limit: 3 } })
   @Post('register-org')
   async registerOrg(@Body() dto: RegisterOrgDto) {
     return this.authService.registerOrg(dto);
   }
 
   // Moderate: 10 join requests per IP per hour
-  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
+  @Throttle({ long: { ttl: 3_600_000, limit: 10 } })
   @Post('join-request')
   async joinRequest(@Body() dto: JoinRequestDto) {
     return this.authService.submitJoinRequest(dto);
