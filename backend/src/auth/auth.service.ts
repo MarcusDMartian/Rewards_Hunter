@@ -12,9 +12,23 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterOrgDto, JoinRequestDto } from './dto/auth.dto';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+
+let mailTransporter: Transporter | null = null;
+if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  mailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+  });
+} else {
+  console.warn(
+    '[Mail] GMAIL_USER or GMAIL_APP_PASSWORD missing — OTP emails will be stubbed to console',
+  );
+}
 
 @Injectable()
 export class AuthService {
@@ -71,23 +85,23 @@ export class AuthService {
       },
     });
 
+    if (!mailTransporter) {
+      console.log(`[OTP Stub] Gmail not configured. OTP for ${email}: ${code}`);
+      return { success: true };
+    }
+
     try {
-      if (process.env.RESEND_API_KEY) {
-        await resend.emails.send({
-          from: 'Reward Hunter <onboarding@resend.dev>',
-          to: email,
-          subject: 'Your Reward Hunter Verification Code',
-          html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
-        });
-        console.log(`[OTP] Sent real email to ${email}`);
-      } else {
-        console.log(
-          `[OTP Stub] RESEND_API_KEY missing. Sending OTP to ${email}: ${code}`,
-        );
-      }
+      const info = await mailTransporter.sendMail({
+        from: `"Reward Hunter" <${GMAIL_USER}>`,
+        to: email,
+        subject: 'Your Reward Hunter Verification Code',
+        text: `Your verification code is: ${code}\n\nThis code will expire in 5 minutes.`,
+        html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
+      });
+      console.log(`[OTP] Sent to ${email} via Gmail (messageId=${info.messageId})`);
       return { success: true };
     } catch (error) {
-      console.error('[OTP Error] Failed to send email via Resend', error);
+      console.error('[OTP Error] Failed to send email via Gmail SMTP', error);
       throw new ConflictException('Failed to send OTP email');
     }
   }
