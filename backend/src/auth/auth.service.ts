@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 import { LoginDto, RegisterOrgDto, JoinRequestDto } from './dto/auth.dto';
 import * as nodemailer from 'nodemailer';
 
@@ -46,6 +47,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private gamification: GamificationService,
   ) {}
 
   // Extract domain from email
@@ -153,6 +155,9 @@ export class AuthService {
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload);
+
+    // Fire-and-forget: awards 5 pts + updates streak + daily mission progress
+    this.gamification.processEvent(user.id, 'daily_login').catch(() => {});
 
     return {
       accessToken,

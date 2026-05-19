@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@nestjs/cli": "^11.0.0",

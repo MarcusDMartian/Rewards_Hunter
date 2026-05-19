@@ -292,6 +292,75 @@ export class GamificationService {
   }
 
   // ============================================
+  // BADGE ADMIN CRUD
+  // ============================================
+
+  async createBadge(data: {
+    name: string;
+    icon?: string;
+    color?: string;
+    description?: string;
+    criteriaJson?: string;
+  }) {
+    return this.prisma.badge.create({ data });
+  }
+
+  async updateBadge(
+    id: string,
+    data: Partial<{
+      name: string;
+      icon: string;
+      color: string;
+      description: string;
+      criteriaJson: string;
+    }>,
+  ) {
+    return this.prisma.badge.update({ where: { id }, data });
+  }
+
+  async deleteBadge(id: string) {
+    await this.prisma.userBadge.deleteMany({ where: { badgeId: id } });
+    await this.prisma.badge.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  // ============================================
+  // MISSION ADMIN CRUD
+  // ============================================
+
+  async createMission(data: {
+    title: string;
+    description?: string;
+    type?: string;
+    triggerEvent: string;
+    targetCount?: number;
+    rewardPoints?: number;
+  }) {
+    return this.prisma.mission.create({ data });
+  }
+
+  async updateMission(
+    id: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      type: string;
+      triggerEvent: string;
+      targetCount: number;
+      rewardPoints: number;
+      isActive: boolean;
+    }>,
+  ) {
+    return this.prisma.mission.update({ where: { id }, data });
+  }
+
+  async deleteMission(id: string) {
+    await this.prisma.userMission.deleteMany({ where: { missionId: id } });
+    await this.prisma.mission.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  // ============================================
   // STREAK
   // ============================================
 

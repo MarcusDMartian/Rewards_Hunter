@@ -31,7 +31,7 @@ async function main() {
     },
   });
 
-  // 3. Create Default Missions
+  // 3. Create Default Missions (idempotent by title)
   const missions = [
     {
       title: 'Submit 3 ideas',
@@ -60,42 +60,41 @@ async function main() {
   ];
 
   for (const mission of missions) {
-    await prisma.mission.upsert({
-      where: { id: 'mission_' + mission.triggerEvent }, // This won't work perfectly with where id but for seed it's fine to just create them if they don't exist by title
-      update: {},
-      create: mission,
-    }).catch(async (e) => {
-      // Fallback if id is not found (which it won't be as it's auto-generated)
+    const existing = await prisma.mission.findFirst({ where: { title: mission.title } });
+    if (!existing) {
       await prisma.mission.create({ data: mission });
-    });
+    }
   }
 
-  // 4. Create Default Badges
+  // 4. Create Default Badges (criteriaJson populated so auto-unlock works)
   const badges = [
     {
       name: 'Kaizen Rookie',
       icon: '🌱',
       color: 'bg-green-100',
       description: 'Submitted your first Kaizen idea.',
+      criteriaJson: JSON.stringify({ type: 'ideas_count', count: 1 }),
     },
     {
       name: 'Team Player',
       icon: '🤝',
       color: 'bg-blue-100',
       description: 'Received 10 kudos from your teammates.',
+      criteriaJson: JSON.stringify({ type: 'kudos_received', count: 10 }),
     },
     {
       name: 'Innovation Master',
       icon: '💡',
       color: 'bg-yellow-100',
       description: 'Had 5 ideas approved and implemented.',
+      criteriaJson: JSON.stringify({ type: 'ideas_count', count: 5 }),
     },
   ];
 
   for (const badge of badges) {
     await prisma.badge.upsert({
       where: { name: badge.name },
-      update: {},
+      update: { criteriaJson: badge.criteriaJson },
       create: badge,
     });
   }
