@@ -14,16 +14,33 @@ import {
     Clock,
     Loader2,
     Target,
-    ShieldCheck
+    ShieldCheck,
+    KeyRound
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Organization } from '../types';
 
-type Step = 'email' | 'login' | 'register-org' | 'join-request' | 'pending';
+type Step =
+    | 'email'
+    | 'login'
+    | 'register-org'
+    | 'join-request'
+    | 'pending'
+    | 'forgot-otp'
+    | 'forgot-reset';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
-    const { login, registerOrganization, submitJoinRequest, checkDomain, sendOtp } = useAuth();
+    const {
+        login,
+        registerOrganization,
+        submitJoinRequest,
+        checkDomain,
+        sendOtp,
+        sendForgotPasswordOtp,
+        verifyForgotPasswordOtp,
+        resetPassword
+    } = useAuth();
 
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
@@ -37,6 +54,11 @@ const Login: React.FC = () => {
     // OTP states
     const [otp, setOtp] = useState('');
     const [isOtpRequested, setIsOtpRequested] = useState(false);
+
+    // Forgot-password states
+    const [resetToken, setResetToken] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -195,7 +217,97 @@ const Login: React.FC = () => {
         }
     };
 
+    const handleForgotPassword = async () => {
+        setError('');
+        if (!email || !email.includes('@')) {
+            setError('Invalid email');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const result = await sendForgotPasswordOtp(email);
+            if (result.success) {
+                setOtp('');
+                setStep('forgot-otp');
+            } else {
+                setError(result.error || 'Failed to send OTP');
+            }
+        } catch {
+            setError('An error occurred while sending OTP');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleVerifyForgotOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!otp || otp.length < 6) {
+            setError('Please enter a valid 6-digit OTP');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const result = await verifyForgotPasswordOtp(email, otp);
+            if (result.success && result.resetToken) {
+                setResetToken(result.resetToken);
+                setNewPassword('');
+                setConfirmPassword('');
+                setStep('forgot-reset');
+            } else {
+                setError(result.error || 'Invalid or expired OTP');
+            }
+        } catch {
+            setError('An error occurred while verifying OTP');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!newPassword || newPassword.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const result = await resetPassword(resetToken, newPassword);
+            if (result.success) {
+                navigate('/');
+            } else {
+                setError(result.error || 'Failed to reset password');
+            }
+        } catch {
+            setError('An error occurred while resetting password');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const goBack = () => {
+        if (step === 'forgot-otp') {
+            setStep('login');
+            setOtp('');
+            setError('');
+            return;
+        }
+        if (step === 'forgot-reset') {
+            setStep('forgot-otp');
+            setNewPassword('');
+            setConfirmPassword('');
+            setError('');
+            return;
+        }
         if (isOtpRequested) {
             setIsOtpRequested(false);
             setOtp('');
@@ -328,6 +440,17 @@ const Login: React.FC = () => {
                                             </>
                                         )}
                                     </button>
+
+                                    <div className="text-center">
+                                        <button
+                                            type="button"
+                                            onClick={handleForgotPassword}
+                                            disabled={isLoading}
+                                            className="text-indigo-300 hover:text-indigo-200 text-sm underline disabled:opacity-50"
+                                        >
+                                            Forgot password?
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         )}
@@ -484,6 +607,125 @@ const Login: React.FC = () => {
                                         ) : (
                                             <>
                                                 <span>{isOtpRequested ? 'Verify & Join' : 'Request to Join'}</span>
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Step: Forgot Password — Verify OTP */}
+                        {step === 'forgot-otp' && (
+                            <form onSubmit={handleVerifyForgotOtp} className="space-y-6">
+                                <div className="text-center mb-6">
+                                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/20 mb-3">
+                                        <ShieldCheck className="w-7 h-7 text-emerald-400" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-white mb-2">Verify Your Email</h2>
+                                    <p className="text-slate-400 text-sm">
+                                        We sent a 6-digit code to <span className="text-white">{email}</span>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            placeholder="Enter 6-digit OTP"
+                                            maxLength={6}
+                                            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-emerald-500/30 rounded-xl text-emerald-100 placeholder-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    {error && (
+                                        <p className="text-red-400 text-sm text-center">{error}</p>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isLoading ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <span>Verify Code</span>
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <div className="text-center">
+                                        <button
+                                            type="button"
+                                            onClick={handleForgotPassword}
+                                            disabled={isLoading}
+                                            className="text-indigo-300 hover:text-indigo-200 text-sm underline disabled:opacity-50"
+                                        >
+                                            Resend code
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Step: Forgot Password — Set New Password */}
+                        {step === 'forgot-reset' && (
+                            <form onSubmit={handleResetPassword} className="space-y-6">
+                                <div className="text-center mb-6">
+                                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/20 mb-3">
+                                        <KeyRound className="w-7 h-7 text-indigo-300" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-white mb-2">Create New Password</h2>
+                                    <p className="text-slate-400 text-sm">
+                                        Set a new password for <span className="text-white">{email}</span>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="New password (min 6 characters)"
+                                            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            placeholder="Confirm new password"
+                                            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                        />
+                                    </div>
+
+                                    {error && (
+                                        <p className="text-red-400 text-sm text-center">{error}</p>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isLoading ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <span>Save & Sign In</span>
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}

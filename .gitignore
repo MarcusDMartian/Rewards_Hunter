@@ -34,3 +34,5 @@ yarn-error.log*
 # TypeScript Build Info
 *.tsbuildinfo
 node_modules/.tmp/
+
+.early.coverage

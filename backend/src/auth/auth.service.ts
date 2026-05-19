@@ -326,6 +326,98 @@ export class AuthService {
     return { success: true };
   }
 
+  // Send OTP for forgot-password flow (requires existing user)
+  async sendForgotPasswordOtp(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    if (!user) {
+      throw new NotFoundException('No account found for this email');
+    }
+    return this.sendOtp(email);
+  }
+
+  // Verify OTP for forgot-password and issue a short-lived reset token
+  async verifyForgotPasswordOtp(email: string, otp: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+    if (!user) {
+      throw new NotFoundException('No account found for this email');
+    }
+
+    const otpRecord = await this.prisma.otpRecord.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        code: otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
+      throw new UnauthorizedException('Invalid or expired OTP code');
+    }
+
+    await this.prisma.otpRecord.update({
+      where: { id: otpRecord.id },
+      data: { isUsed: true },
+    });
+
+    const resetToken = this.jwtService.sign(
+      { sub: user.id, email: user.email, purpose: 'password-reset' },
+      { expiresIn: '15m' },
+    );
+
+    return { resetToken };
+  }
+
+  // Reset password using reset token, then auto-login
+  async resetPassword(resetToken: string, newPassword: string) {
+    let payload: { sub: string; email: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(resetToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    if (payload.purpose !== 'password-reset') {
+      throw new UnauthorizedException('Invalid reset token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: {
+        team: true,
+        organization: true,
+        userBadges: { include: { badge: true } },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    const loginPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    const accessToken = this.jwtService.sign(loginPayload);
+
+    return {
+      accessToken,
+      user: this.formatUser({ ...user, passwordHash }),
+      organization: user.organization,
+    };
+  }
+
   // Get user by ID (for JWT strategy)
   async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({

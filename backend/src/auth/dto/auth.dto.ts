@@ -64,3 +64,27 @@ export class JoinRequestDto {
   @IsNotEmpty()
   otp: string;
 }
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  email: string;
+}
+
+export class VerifyForgotOtpDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  resetToken: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}

@@ -91,6 +91,61 @@ export const registerOrganization = async (data: RegisterOrgData): Promise<{ suc
 };
 
 /**
+ * Send OTP for forgot-password (requires account to exist)
+ */
+export const sendForgotPasswordOtp = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+        await api.post('/auth/forgot-password', { email });
+        return { success: true };
+    } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to send OTP';
+        return { success: false, error: message };
+    }
+};
+
+/**
+ * Verify OTP for forgot-password, returns short-lived reset token
+ */
+export const verifyForgotPasswordOtp = async (
+    email: string,
+    otp: string
+): Promise<{ success: boolean; resetToken?: string; error?: string }> => {
+    try {
+        const { data } = await api.post('/auth/forgot-password/verify', { email, otp });
+        return { success: true, resetToken: data.resetToken };
+    } catch (error: any) {
+        const message = error.response?.data?.message || 'Invalid or expired OTP';
+        return { success: false, error: message };
+    }
+};
+
+/**
+ * Reset password using reset token, then auto-login (stores JWT)
+ */
+export const resetPassword = async (
+    resetToken: string,
+    newPassword: string
+): Promise<{ success: boolean; user?: User; organization?: Organization; error?: string }> => {
+    try {
+        const { data } = await api.post('/auth/forgot-password/reset', {
+            resetToken,
+            newPassword,
+        });
+
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.accessToken);
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(data.user));
+        if (data.organization) {
+            localStorage.setItem(STORAGE_KEYS.AUTH_ORG, JSON.stringify(data.organization));
+        }
+
+        return { success: true, user: data.user, organization: data.organization };
+    } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to reset password';
+        return { success: false, error: message };
+    }
+};
+
+/**
  * Submit join request for existing organization
  */
 export const submitJoinRequest = async (data: JoinRequestData): Promise<{ success: boolean; error?: string }> => {

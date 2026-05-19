@@ -10,6 +10,9 @@ import {
   JoinRequestDto,
   CheckDomainDto,
   SendOtpDto,
+  ForgotPasswordDto,
+  VerifyForgotOtpDto,
+  ResetPasswordDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard, Roles } from './roles.guard';
@@ -43,6 +46,21 @@ export class AuthController {
   @Post('join-request')
   async joinRequest(@Body() dto: JoinRequestDto) {
     return this.authService.submitJoinRequest(dto);
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.sendForgotPasswordOtp(dto.email);
+  }
+
+  @Post('forgot-password/verify')
+  async verifyForgotPasswordOtp(@Body() dto: VerifyForgotOtpDto) {
+    return this.authService.verifyForgotPasswordOtp(dto.email, dto.otp);
+  }
+
+  @Post('forgot-password/reset')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.resetToken, dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard)

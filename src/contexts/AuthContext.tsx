@@ -13,6 +13,9 @@ interface AuthContextType extends AuthState {
     submitJoinRequest: (data: { email: string; password: string; name: string; orgId: string; otp?: string }) => Promise<{ success: boolean; error?: string }>;
     checkDomain: (email: string) => Promise<{ exists: boolean; organization?: Organization; userExists?: boolean }>;
     sendOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
+    sendForgotPasswordOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
+    verifyForgotPasswordOtp: (email: string, otp: string) => Promise<{ success: boolean; resetToken?: string; error?: string }>;
+    resetPassword: (resetToken: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
     refreshAuth: () => Promise<void>;
 }
 
@@ -120,6 +123,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return authService.sendOtp(email);
     };
 
+    const sendForgotPasswordOtp = async (email: string) => {
+        return authService.sendForgotPasswordOtp(email);
+    };
+
+    const verifyForgotPasswordOtp = async (email: string, otp: string) => {
+        return authService.verifyForgotPasswordOtp(email, otp);
+    };
+
+    const resetPassword = async (resetToken: string, newPassword: string) => {
+        const result = await authService.resetPassword(resetToken, newPassword);
+
+        if (result.success && result.user) {
+            setCurrentUser(result.user);
+            setOrganization(result.organization || null);
+            setIsAuthenticated(true);
+            return { success: true };
+        }
+
+        return { success: false, error: result.error };
+    };
+
     const value: AuthContextType = {
         currentUser,
         organization,
@@ -131,6 +155,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         submitJoinRequest,
         checkDomain,
         sendOtp,
+        sendForgotPasswordOtp,
+        verifyForgotPasswordOtp,
+        resetPassword,
         refreshAuth,
     };
 
