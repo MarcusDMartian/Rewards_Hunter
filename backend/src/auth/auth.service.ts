@@ -77,9 +77,9 @@ export class AuthService {
 
   // Send OTP
   async sendOtp(email: string) {
-    // Generate a 6-digit OTP using CSPRNG
-    const code = randomInt(100000, 1000000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    // TODO: restore real OTP after demo — hardcoded to 123456 for now
+    const code = '123456';
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour for demo
 
     // Invalidate old OTPs for this email
     await this.prisma.otpRecord.updateMany({
@@ -96,29 +96,30 @@ export class AuthService {
       },
     });
 
-    const transporter = createMailTransporter();
-    if (!transporter) {
-      console.log(`[OTP Stub] No mail provider configured. OTP for ${email}: ${code}`);
-      return { success: true };
-    }
+    // TODO: restore email sending after demo
+    // const transporter = createMailTransporter();
+    // if (!transporter) {
+    //   console.log(`[OTP Stub] No mail provider configured. OTP for ${email}: ${code}`);
+    //   return { success: true };
+    // }
+    // const fromAddress =
+    //   process.env.BREVO_SMTP_USER || process.env.GMAIL_USER || 'noreply@rewardshunter.app';
+    // try {
+    //   const info = await transporter.sendMail({
+    //     from: `"Reward Hunter" <${fromAddress}>`,
+    //     to: email,
+    //     subject: 'Your Reward Hunter Verification Code',
+    //     text: `Your verification code is: ${code}\n\nThis code will expire in 5 minutes.`,
+    //     html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
+    //   });
+    //   console.log(`[OTP] Sent to ${email} (messageId=${info.messageId})`);
+    // } catch (error) {
+    //   console.error('[OTP Error] Failed to send OTP email:', (error as Error).message);
+    //   throw new ConflictException('Failed to send OTP email');
+    // }
 
-    const fromAddress =
-      process.env.BREVO_SMTP_USER || process.env.GMAIL_USER || 'noreply@rewardshunter.app';
-
-    try {
-      const info = await transporter.sendMail({
-        from: `"Reward Hunter" <${fromAddress}>`,
-        to: email,
-        subject: 'Your Reward Hunter Verification Code',
-        text: `Your verification code is: ${code}\n\nThis code will expire in 5 minutes.`,
-        html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
-      });
-      console.log(`[OTP] Sent to ${email} (messageId=${info.messageId})`);
-      return { success: true };
-    } catch (error) {
-      console.error('[OTP Error] Failed to send OTP email:', (error as Error).message);
-      throw new ConflictException('Failed to send OTP email');
-    }
+    console.log(`[OTP Demo] Hardcoded OTP used for ${email}`);
+    return { success: true };
   }
 
   // Login with email and password
