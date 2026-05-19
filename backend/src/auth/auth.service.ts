@@ -14,21 +14,31 @@ import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterOrgDto, JoinRequestDto } from './dto/auth.dto';
 import * as nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+function createMailTransporter() {
+  // Brevo (formerly Sendinblue) SMTP — works reliably from cloud provider IPs.
+  // Falls back to Gmail SMTP if Brevo creds are absent.
+  const brevoUser = process.env.BREVO_SMTP_USER;
+  const brevoKey = process.env.BREVO_SMTP_KEY;
+  if (brevoUser && brevoKey) {
+    return nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: { user: brevoUser, pass: brevoKey },
+    });
+  }
 
-let mailTransporter: Transporter | null = null;
-if (GMAIL_USER && GMAIL_APP_PASSWORD) {
-  mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-  });
-} else {
-  console.warn(
-    '[Mail] GMAIL_USER or GMAIL_APP_PASSWORD missing — OTP emails will be stubbed to console',
-  );
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  if (gmailUser && gmailPass) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
+    });
+  }
+
+  return null;
 }
 
 @Injectable()
@@ -86,23 +96,27 @@ export class AuthService {
       },
     });
 
-    if (!mailTransporter) {
-      console.log(`[OTP Stub] Gmail not configured. OTP for ${email}: ${code}`);
+    const transporter = createMailTransporter();
+    if (!transporter) {
+      console.log(`[OTP Stub] No mail provider configured. OTP for ${email}: ${code}`);
       return { success: true };
     }
 
+    const fromAddress =
+      process.env.BREVO_SMTP_USER || process.env.GMAIL_USER || 'noreply@rewardshunter.app';
+
     try {
-      const info = await mailTransporter.sendMail({
-        from: `"Reward Hunter" <${GMAIL_USER}>`,
+      const info = await transporter.sendMail({
+        from: `"Reward Hunter" <${fromAddress}>`,
         to: email,
         subject: 'Your Reward Hunter Verification Code',
         text: `Your verification code is: ${code}\n\nThis code will expire in 5 minutes.`,
         html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 5 minutes.</p>`,
       });
-      console.log(`[OTP] Sent to ${email} via Gmail (messageId=${info.messageId})`);
+      console.log(`[OTP] Sent to ${email} (messageId=${info.messageId})`);
       return { success: true };
     } catch (error) {
-      console.error('[OTP Error] Failed to send email via Gmail SMTP', error);
+      console.error('[OTP Error] Failed to send OTP email:', (error as Error).message);
       throw new ConflictException('Failed to send OTP email');
     }
   }
