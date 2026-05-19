@@ -91,15 +91,18 @@ export class JoinRequestDto {
 
 export class ForgotPasswordDto {
   @IsEmail()
+  @MaxLength(254)
   email: string;
 }
 
 export class VerifyForgotOtpDto {
   @IsEmail()
+  @MaxLength(254)
   email: string;
 
   @IsString()
   @IsNotEmpty()
+  @Length(6, 6)
   otp: string;
 }
 
@@ -109,6 +112,6 @@ export class ResetPasswordDto {
   resetToken: string;
 
   @IsString()
-  @MinLength(6)
+  @Matches(STRONG_PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   newPassword: string;
 }
