@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Kudos as KudosType, User } from '../types';
 import { getKudos, addKudos, toggleKudosLike, getCurrentUser } from '../services/storageService';
-import { processGameEvent } from '../services/gamificationService';
+import { useAuth } from '../contexts/AuthContext';
 
 import api from '../services/apiClient';
 import UserSelectModal from '../components/UserSelectModal';
@@ -32,6 +32,7 @@ export default function Kudos() {
     const ITEMS_PER_PAGE = 12;
     const user = getCurrentUser();
     const { addToast } = useToast();
+    const { refreshAuth } = useAuth();
 
     // Form state
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -83,11 +84,9 @@ export default function Kudos() {
                 coreValue,
                 message: message.trim(),
             });
+            await refreshAuth();
 
-            // Auto-trigger gamification
-            await processGameEvent('kudos_sent');
-
-            addToast(`❤️ Kudos sent to ${selectedUser.name}! +10 pts`, 'success');
+            addToast(`Kudos sent to ${selectedUser.name}! +10 pts`, 'success');
 
             // Reset form
             setSelectedUser(null);

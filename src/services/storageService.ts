@@ -48,12 +48,27 @@ export async function getAllUsers(orgId?: string): Promise<User[]> {
     }
 }
 
-export async function updateUserPoints(_amount: number): Promise<User> {
-    // Points are managed server-side via gamification events
-    // Leaving this function as a placeholder if triggered manually by components,
-    // but actual state should be updated by re-fetching the user from the backend.
-    const user = getCurrentUser();
-    return user;
+/**
+ * Re-fetch the current user from the API after a gamification event.
+ * Points, level, badges and streak are managed server-side, so the only
+ * correct way to update them client-side is to pull fresh data.
+ */
+export async function refreshCurrentUser(): Promise<User | null> {
+    try {
+        const { data } = await api.get('/auth/me');
+        saveCurrentUser(data);
+        return data as User;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * @deprecated Points are managed server-side. Call refreshCurrentUser()
+ * after gamified actions and let AuthContext.refreshAuth() propagate state.
+ */
+export async function updateUserPoints(_amount: number): Promise<User | null> {
+    return refreshCurrentUser();
 }
 
 // ============================================
