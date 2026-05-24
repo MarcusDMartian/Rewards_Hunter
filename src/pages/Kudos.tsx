@@ -135,8 +135,9 @@ export default function Kudos() {
             setIsSubmitting(false);
             loadKudos();
             setActiveTab('wall');
-        } catch (err: any) {
-            const msg = err?.response?.data?.message ?? 'Failed to send kudos';
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                ?? 'Failed to send kudos';
             addToast(msg, 'error');
         } finally {
             setIsSubmitting(false);

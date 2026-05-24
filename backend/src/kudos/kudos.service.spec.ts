@@ -36,6 +36,7 @@ const mockPrisma = {
   kudos: {
     findMany: jest.fn().mockResolvedValue([mockKudos]),
     create: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
   },
   kudosLike: {
     findUnique: jest.fn(),

@@ -10,6 +10,7 @@ import { NotFoundException } from '@nestjs/common';
 const mockPrisma = {
   user: { findUnique: jest.fn(), update: jest.fn() },
   pointTransaction: { create: jest.fn() },
+  pointRule: { findUnique: jest.fn() },
   mission: { findMany: jest.fn() },
   userMission: {
     findMany: jest.fn(),
@@ -62,6 +63,14 @@ describe('GamificationService', () => {
       mockPrisma.userMission.findMany.mockResolvedValue([]);
       mockPrisma.badge.findMany.mockResolvedValue([]);
       mockPrisma.userBadge.findMany.mockResolvedValue([]);
+      mockPrisma.pointRule.findUnique.mockImplementation(({ where: { eventType } }: { where: { eventType: string } }) => {
+        const rules: Record<string, { enabled: boolean; points: number }> = {
+          idea_created: { enabled: true, points: 50 },
+          kudos_sent: { enabled: true, points: 10 },
+          daily_login: { enabled: true, points: 5 },
+        };
+        return Promise.resolve(rules[eventType] ?? null);
+      });
     });
 
     it('should award 50 points for idea_created', async () => {

@@ -6,6 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GamificationService } from '../gamification/gamification.service';
 import {
   UnauthorizedException,
   ConflictException,
@@ -46,6 +47,10 @@ const mockJwtService = {
   sign: jest.fn().mockReturnValue('mock-jwt-token'),
 };
 
+const mockGamification = {
+  processEvent: jest.fn().mockResolvedValue({ points: 0 }),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -55,6 +60,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: GamificationService, useValue: mockGamification },
       ],
     }).compile();
 
