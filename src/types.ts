@@ -14,6 +14,7 @@ export interface User {
     points: number;
     monthlyPoints: number;
     quarterlyPoints: number;
+    weeklyPoints: number;
     level: number;
     nextLevelPoints: number;
     streak: number;
@@ -22,6 +23,8 @@ export interface User {
     orgId?: string;
 }
 
+export type BadgeRarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+
 export interface Badge {
     id: string;
     name: string;
@@ -29,6 +32,9 @@ export interface Badge {
     color: string;
     description: string;
     unlocked?: boolean;
+    rarity?: BadgeRarity;
+    progress?: number;
+    targetCount?: number;
 }
 
 export interface Mission {
@@ -69,16 +75,20 @@ export interface Comment {
     createdAt: string;
 }
 
+export type CoreValueKey = 'ownership' | 'customerFirst' | 'kaizen' | 'teamUp' | 'integrity' | 'biasForSpeed';
+
 export interface Kudos {
     id: string;
     sender: User;
     receiver: User;
-    coreValue: 'Kaizen' | 'Collaboration' | 'Ownership' | 'Customer First';
+    coreValue: string; // one of CoreValueKey labels
     message: string;
     createdAt: string;
     likes: number;
     likedBy: string[];
 }
+
+export type RewardCategory = 'Food' | 'Time' | 'Merch' | 'Tech' | 'Learn';
 
 export interface Reward {
     id: string;
@@ -86,9 +96,12 @@ export interface Reward {
     description: string;
     image: string;
     cost: number;
-    type: 'Voucher' | 'DayOff' | 'Merch';
+    type: string;
+    category: RewardCategory;
     stock: number;
     isActive: boolean;
+    isFeatured?: boolean;
+    promoText?: string;
 }
 
 export interface PointTransaction {
@@ -109,6 +122,7 @@ export interface RedemptionRequest {
     rewardName: string;
     pointsCost: number;
     status: 'Pending' | 'Approved' | 'Rejected' | 'Fulfilled';
+    deliveryMethod: 'email' | 'physical';
     requestedAt: string;
     processedAt?: string;
     processedBy?: string;
@@ -157,11 +171,47 @@ export interface FeedbackEntry {
 export interface ActivityItem {
     id: string;
     type: 'idea' | 'kudos' | 'badge' | 'level_up';
-    user: User;
+    user: { id: string; name: string; avatar: string };
     title: string;
     description: string;
     createdAt: string;
     metadata?: Record<string, unknown>;
+}
+
+// Leaderboard row (extended)
+export interface LeaderboardRow extends User {
+    rank: number;
+    trend: 'up' | 'down' | 'same' | 'new';
+    ideasCount: number;
+    kudosCount: number;
+    badgesCount: number;
+    periodPoints: number;
+}
+
+// Core value definition
+export interface CoreValueDef {
+    key: string;
+    label: string;
+    color: string;
+    icon: string;
+    order: number;
+}
+
+// Point Rule (admin)
+export interface PointRule {
+    id: string;
+    eventType: string;
+    points: number;
+    dailyLimit: number;
+    enabled: boolean;
+    label: string;
+}
+
+// Kudos quota
+export interface KudosQuota {
+    used: number;
+    limit: number;
+    remaining: number;
 }
 
 // ============================================
