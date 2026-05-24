@@ -60,10 +60,18 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get('leaderboard')
   async getLeaderboard(
+    @CurrentUser() user: ReqUser,
     @Query('period') period = 'all',
     @Query('teamId') teamId?: string,
   ) {
-    return this.usersService.getLeaderboard(period, teamId);
+    return this.usersService.getLeaderboard(period, teamId, user.orgId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Leader', 'Admin', 'Superadmin', 'SystemAdmin')
+  @Get('admin/burnout')
+  async getBurnoutRisks(@CurrentUser() user: ReqUser) {
+    return this.usersService.getBurnoutRisks(user.orgId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

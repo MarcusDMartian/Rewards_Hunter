@@ -1,5 +1,6 @@
 // ============================================
 // GAMIFICATION SERVICE - Missions, Badges, Events, Levels
+// Points are driven by PointRule records (admin-configurable)
 // ============================================
 
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -10,33 +11,20 @@ export class GamificationService {
   constructor(private prisma: PrismaService) {}
 
   // ============================================
-  // EVENTS ENGINE
+  // EVENTS ENGINE (reads PointRule from DB)
   // ============================================
 
   async processEvent(userId: string, eventType: string, referenceId?: string) {
-    // 1. Award points based on event type
-    const pointsMap: Record<string, number> = {
-      idea_created: 50,
-      idea_approved: 100,
-      idea_implemented: 200,
-      kudos_sent: 10,
-      kudos_received: 15,
-      daily_login: 5,
-    };
-
-    const points = pointsMap[eventType] || 0;
+    const rule = await this.prisma.pointRule.findUnique({ where: { eventType } });
+    const points = rule?.enabled ? (rule.points ?? 0) : 0;
 
     if (points > 0) {
       await this.awardPoints(userId, points, eventType, referenceId);
     }
 
-    // 2. Update mission progress
     await this.updateMissionProgress(userId, eventType);
-
-    // 3. Check badge criteria
     await this.checkBadgeUnlock(userId, eventType);
 
-    // 4. Update streak for daily_login
     if (eventType === 'daily_login') {
       await this.updateStreak(userId);
     }
@@ -48,43 +36,34 @@ export class GamificationService {
   // POINTS
   // ============================================
 
-  private async awardPoints(
-    userId: string,
-    amount: number,
-    source: string,
-    referenceId?: string,
-  ) {
+  private async awardPoints(userId: string, amount: number, source: string, referenceId?: string) {
     await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) return;
+
+      const newTotal = user.points + amount;
+      let newLevel = user.level;
+      let newNextLevel = user.nextLevelPoints;
+      if (newTotal >= user.nextLevelPoints) {
+        newLevel = user.level + 1;
+        newNextLevel = Math.floor(user.nextLevelPoints * 1.5);
+      }
+
       await tx.user.update({
         where: { id: userId },
         data: {
           points: { increment: amount },
           monthlyPoints: { increment: amount },
           quarterlyPoints: { increment: amount },
+          weeklyPoints: { increment: amount },
+          level: newLevel,
+          nextLevelPoints: newNextLevel,
         },
       });
 
       await tx.pointTransaction.create({
-        data: {
-          userId,
-          amount,
-          type: 'earn',
-          source,
-          referenceId,
-          description: `Earned from: ${source}`,
-        },
+        data: { userId, amount, type: 'earn', source, referenceId, description: `Earned from: ${source}` },
       });
-
-      // Check level up
-      const user = await tx.user.findUnique({ where: { id: userId } });
-      if (user && user.points + amount >= user.nextLevelPoints) {
-        const newLevel = user.level + 1;
-        const newNextLevel = Math.floor(user.nextLevelPoints * 1.5);
-        await tx.user.update({
-          where: { id: userId },
-          data: { level: newLevel, nextLevelPoints: newNextLevel },
-        });
-      }
     });
   }
 
@@ -97,35 +76,21 @@ export class GamificationService {
     today.setHours(0, 0, 0, 0);
 
     let userMissions = await this.prisma.userMission.findMany({
-      where: {
-        userId,
-        periodStart: { gte: today },
-      },
+      where: { userId, periodStart: { gte: today } },
       include: { mission: true },
     });
 
-    // If no missions for today, assign active missions
     if (userMissions.length === 0) {
-      const activeMissions = await this.prisma.mission.findMany({
-        where: { isActive: true },
-      });
-
+      const activeMissions = await this.prisma.mission.findMany({ where: { isActive: true } });
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
       for (const mission of activeMissions) {
-        const periodEnd =
-          mission.type === 'weekly'
-            ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-            : endOfDay;
-
+        const periodEnd = mission.type === 'weekly'
+          ? new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+          : endOfDay;
         await this.prisma.userMission.create({
-          data: {
-            userId,
-            missionId: mission.id,
-            periodStart: today,
-            periodEnd,
-          },
+          data: { userId, missionId: mission.id, periodStart: today, periodEnd },
         });
       }
 
@@ -153,31 +118,14 @@ export class GamificationService {
     today.setHours(0, 0, 0, 0);
 
     const userMission = await this.prisma.userMission.findFirst({
-      where: {
-        userId,
-        missionId,
-        periodStart: { gte: today },
-        completed: true,
-        claimed: false,
-      },
+      where: { userId, missionId, periodStart: { gte: today }, completed: true, claimed: false },
       include: { mission: true },
     });
 
-    if (!userMission) {
-      throw new NotFoundException('Mission not found or not claimable');
-    }
+    if (!userMission) throw new NotFoundException('Mission not found or not claimable');
 
-    await this.prisma.userMission.update({
-      where: { id: userMission.id },
-      data: { claimed: true },
-    });
-
-    await this.awardPoints(
-      userId,
-      userMission.mission.rewardPoints,
-      'mission_completed',
-      missionId,
-    );
+    await this.prisma.userMission.update({ where: { id: userMission.id }, data: { claimed: true } });
+    await this.awardPoints(userId, userMission.mission.rewardPoints, 'mission_completed', missionId);
 
     return { reward: userMission.mission.rewardPoints };
   }
@@ -187,11 +135,7 @@ export class GamificationService {
     today.setHours(0, 0, 0, 0);
 
     const userMissions = await this.prisma.userMission.findMany({
-      where: {
-        userId,
-        periodStart: { gte: today },
-        completed: false,
-      },
+      where: { userId, periodStart: { gte: today }, completed: false },
       include: { mission: true },
     });
 
@@ -208,37 +152,54 @@ export class GamificationService {
   }
 
   // ============================================
-  // BADGES
+  // BADGES (with rarity + progress)
   // ============================================
 
   async getAllBadges(userId: string) {
-    const allBadges = await this.prisma.badge.findMany();
+    const allBadges = await this.prisma.badge.findMany({
+      orderBy: [{ rarity: 'asc' }, { name: 'asc' }],
+    });
     const userBadges = await this.prisma.userBadge.findMany({
       where: { userId },
       select: { badgeId: true },
     });
     const unlockedIds = new Set(userBadges.map((ub) => ub.badgeId));
 
-    return allBadges.map((b) => ({
-      id: b.id,
-      name: b.name,
-      icon: b.icon,
-      color: b.color,
-      description: b.description,
-      unlocked: unlockedIds.has(b.id),
-    }));
-  }
-
-  private async checkBadgeUnlock(userId: string, eventType: string) {
-    // Simple criteria-based badge unlock
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        kaizenIdeas: true,
-        kudosSent: true,
-        kudosReceived: true,
-        userBadges: true,
-      },
+      include: { kaizenIdeas: true, kudosSent: true, kudosReceived: true },
+    });
+
+    return allBadges.map((b) => {
+      let criteria: { type?: string; count?: number } = {};
+      try { criteria = JSON.parse(b.criteriaJson); } catch { /* skip */ }
+
+      const targetCount = criteria.count ?? 0;
+      let rawProgress = 0;
+
+      if (user && targetCount > 0) {
+        switch (criteria.type) {
+          case 'ideas_count':    rawProgress = user.kaizenIdeas.length; break;
+          case 'kudos_received': rawProgress = user.kudosReceived.length; break;
+          case 'kudos_sent':     rawProgress = user.kudosSent.length; break;
+          case 'streak':         rawProgress = user.streak; break;
+        }
+      }
+
+      return {
+        id: b.id, name: b.name, icon: b.icon, color: b.color,
+        description: b.description, rarity: b.rarity,
+        unlocked: unlockedIds.has(b.id),
+        progress: Math.min(rawProgress, targetCount),
+        targetCount,
+      };
+    });
+  }
+
+  private async checkBadgeUnlock(userId: string, _eventType: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { kaizenIdeas: true, kudosSent: true, kudosReceived: true, userBadges: true },
     });
     if (!user) return;
 
@@ -247,48 +208,72 @@ export class GamificationService {
 
     for (const badge of badges) {
       if (unlockedIds.has(badge.id)) continue;
-
-      let criteria: any = {};
-      try {
-        criteria = JSON.parse(badge.criteriaJson);
-      } catch {
-        continue;
-      }
+      let criteria: { type?: string; count?: number } = {};
+      try { criteria = JSON.parse(badge.criteriaJson); } catch { continue; }
 
       let shouldUnlock = false;
-
-      if (
-        criteria.type === 'ideas_count' &&
-        user.kaizenIdeas.length >= (criteria.count || 5)
-      ) {
-        shouldUnlock = true;
-      } else if (
-        criteria.type === 'kudos_received' &&
-        user.kudosReceived.length >= (criteria.count || 10)
-      ) {
-        shouldUnlock = true;
-      } else if (
-        criteria.type === 'kudos_sent' &&
-        user.kudosSent.length >= (criteria.count || 20)
-      ) {
-        shouldUnlock = true;
-      } else if (
-        criteria.type === 'streak' &&
-        user.streak >= (criteria.count || 30)
-      ) {
-        shouldUnlock = true;
+      const count = criteria.count ?? 0;
+      switch (criteria.type) {
+        case 'ideas_count':    shouldUnlock = user.kaizenIdeas.length >= count; break;
+        case 'kudos_received': shouldUnlock = user.kudosReceived.length >= count; break;
+        case 'kudos_sent':     shouldUnlock = user.kudosSent.length >= count; break;
+        case 'streak':         shouldUnlock = user.streak >= count; break;
       }
 
       if (shouldUnlock) {
         await this.prisma.userBadge.create({
-          data: {
-            userId,
-            badgeId: badge.id,
-            reason: `Auto-unlocked via ${eventType}`,
-          },
+          data: { userId, badgeId: badge.id, reason: 'Auto-unlocked' },
         });
       }
     }
+  }
+
+  // ============================================
+  // BADGE ADMIN CRUD
+  // ============================================
+
+  async createBadge(data: { name: string; icon?: string; color?: string; description?: string; criteriaJson?: string; rarity?: string }) {
+    return this.prisma.badge.create({ data });
+  }
+
+  async updateBadge(id: string, data: Partial<{ name: string; icon: string; color: string; description: string; criteriaJson: string; rarity: string }>) {
+    return this.prisma.badge.update({ where: { id }, data });
+  }
+
+  async deleteBadge(id: string) {
+    await this.prisma.userBadge.deleteMany({ where: { badgeId: id } });
+    await this.prisma.badge.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  // ============================================
+  // MISSION ADMIN CRUD
+  // ============================================
+
+  async createMission(data: { title: string; description?: string; type?: string; triggerEvent: string; targetCount?: number; rewardPoints?: number }) {
+    return this.prisma.mission.create({ data });
+  }
+
+  async updateMission(id: string, data: Partial<{ title: string; description: string; type: string; triggerEvent: string; targetCount: number; rewardPoints: number; isActive: boolean }>) {
+    return this.prisma.mission.update({ where: { id }, data });
+  }
+
+  async deleteMission(id: string) {
+    await this.prisma.userMission.deleteMany({ where: { missionId: id } });
+    await this.prisma.mission.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  // ============================================
+  // POINT RULES ADMIN CRUD
+  // ============================================
+
+  async getAllPointRules() {
+    return this.prisma.pointRule.findMany({ orderBy: { eventType: 'asc' } });
+  }
+
+  async updatePointRule(id: string, data: Partial<{ points: number; dailyLimit: number; enabled: boolean; label: string }>) {
+    return this.prisma.pointRule.update({ where: { id }, data });
   }
 
   // ============================================
@@ -300,16 +285,11 @@ export class GamificationService {
     if (!user) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000)
-      .toISOString()
-      .split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     let newStreak = 1;
-    if (user.lastActiveDate === yesterday) {
-      newStreak = user.streak + 1;
-    } else if (user.lastActiveDate === today) {
-      return; // Already logged in today
-    }
+    if (user.lastActiveDate === yesterday) newStreak = user.streak + 1;
+    else if (user.lastActiveDate === today) return;
 
     await this.prisma.user.update({
       where: { id: userId },
