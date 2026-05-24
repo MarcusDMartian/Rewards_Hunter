@@ -1,41 +1,39 @@
 // ============================================
-// LEADERBOARD PAGE - RANKINGS
+// LEADERBOARD PAGE - HALL OF FAME
 // ============================================
 
 import { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
 import LeaderboardComponent from '../components/Leaderboard';
 import { getLeaderboard } from '../services/storageService';
-import { User } from '../types';
+import { LeaderboardRow } from '../types';
+import usePageTitle from '../hooks/usePageTitle';
 
-type Period = 'month' | 'quarter' | 'all';
+type Period = 'week' | 'month' | 'quarter' | 'all';
+
+const PERIOD_LABELS: Record<Period, string> = {
+    week: 'This Week',
+    month: 'This Month',
+    quarter: 'This Quarter',
+    all: 'All Time',
+};
 
 export default function LeaderboardPage() {
-    const [period, setPeriod] = useState<Period>('month');
+    usePageTitle('Hall of Fame');
+    const [period, setPeriod] = useState<Period>('week');
     const [selectedTeam, setSelectedTeam] = useState('all');
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<LeaderboardRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadLeaderboard = async () => {
             setLoading(true);
             const data = await getLeaderboard(period, selectedTeam);
-            setUsers(data);
+            setUsers(data as LeaderboardRow[]);
             setLoading(false);
         };
         loadLeaderboard();
     }, [period, selectedTeam]);
-
-    const getSortBy = () => {
-        switch (period) {
-            case 'month':
-                return 'monthlyPoints' as const;
-            case 'quarter':
-                return 'quarterlyPoints' as const;
-            default:
-                return 'points' as const;
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -53,44 +51,32 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Period Toggle */}
-            <div className="flex gap-2 p-1 glass rounded-xl">
-                <button
-                    onClick={() => setPeriod('month')}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'month'
-                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                        : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                >
-                    This Month
-                </button>
-                <button
-                    onClick={() => setPeriod('quarter')}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'quarter'
-                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                        : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                >
-                    This Quarter
-                </button>
-                <button
-                    onClick={() => setPeriod('all')}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${period === 'all'
-                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm'
-                        : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                >
-                    All Time
-                </button>
+            <div className="flex gap-1 p-1 glass rounded-xl overflow-x-auto scrollbar-hide">
+                {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                    <button
+                        key={p}
+                        onClick={() => setPeriod(p)}
+                        className={`flex-1 min-w-[80px] px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${period === p
+                            ? 'bg-indigo-500 text-white shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                            }`}
+                    >
+                        {PERIOD_LABELS[p]}
+                    </button>
+                ))}
             </div>
 
             {/* Leaderboard */}
             <div className="glass-card p-6">
                 {loading ? (
-                    <div className="text-center text-slate-500 py-10">Loading rankings...</div>
+                    <div className="space-y-3 animate-pulse">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="h-14 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+                        ))}
+                    </div>
                 ) : (
                     <LeaderboardComponent
                         users={users}
-                        sortBy={getSortBy()}
                         limit={20}
                         showTeamFilter
                         selectedTeam={selectedTeam}

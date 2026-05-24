@@ -10,18 +10,32 @@ import {
     ArrowUpRight,
     HelpCircle,
     AlertTriangle,
+    Star,
+    Zap,
 } from 'lucide-react';
-import { Reward, PointTransaction } from '../types';
+import { Reward, PointTransaction, RewardCategory } from '../types';
 import { getCurrentUser, getTransactions, getRewards } from '../services/storageService';
 import RedeemModal from '../components/RedeemModal';
+import usePageTitle from '../hooks/usePageTitle';
+
+const CATEGORIES: { key: RewardCategory | 'All'; label: string; emoji: string }[] = [
+    { key: 'All',   label: 'All',     emoji: '🎁' },
+    { key: 'Food',  label: 'Food',    emoji: '🍔' },
+    { key: 'Time',  label: 'Time',    emoji: '🏖️' },
+    { key: 'Merch', label: 'Merch',   emoji: '👕' },
+    { key: 'Tech',  label: 'Tech',    emoji: '🎧' },
+    { key: 'Learn', label: 'Learn',   emoji: '📚' },
+];
 
 export default function Rewards() {
+    usePageTitle('Rewards');
     const [user, setUser] = useState(getCurrentUser());
     const [transactions, setTransactions] = useState<PointTransaction[]>([]);
     const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showHowToEarn, setShowHowToEarn] = useState(false);
     const [rewardsList, setRewardsList] = useState<Reward[]>([]);
+    const [activeCategory, setActiveCategory] = useState<RewardCategory | 'All'>('All');
 
     useEffect(() => {
         const loadData = async () => {
@@ -54,6 +68,12 @@ export default function Rewards() {
         }
     };
 
+    // Filter rewards
+    const featuredRewards = rewardsList.filter((r) => r.isFeatured);
+    const filteredRewards = rewardsList.filter(
+        (r) => activeCategory === 'All' || r.category === activeCategory
+    );
+
     return (
         <div className="space-y-6">
             {/* Wallet Header */}
@@ -73,7 +93,8 @@ export default function Rewards() {
                         </button>
                     </div>
                     <div className="text-4xl font-bold mb-1">
-                        {user.points.toLocaleString()} <span className="text-lg font-normal text-slate-300">pts</span>
+                        {user.points.toLocaleString()}{' '}
+                        <span className="text-lg font-normal text-slate-300">pts</span>
                     </div>
                     <div className="text-sm text-slate-400">
                         Level {user.level} • {(user.nextLevelPoints - user.points).toLocaleString()} pts to next level
@@ -87,34 +108,91 @@ export default function Rewards() {
                             Ways to earn points:
                         </h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Submit Kaizen idea</span>
-                                <span className="font-semibold text-emerald-600">+50</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Idea approved</span>
-                                <span className="font-semibold text-emerald-600">+100</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Idea implemented</span>
-                                <span className="font-semibold text-emerald-600">+200</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Send kudos</span>
-                                <span className="font-semibold text-emerald-600">+10</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Receive kudos</span>
-                                <span className="font-semibold text-emerald-600">+20</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
-                                <span className="text-slate-600 dark:text-slate-300">Daily missions</span>
-                                <span className="font-semibold text-emerald-600">+20-50</span>
-                            </div>
+                            {[
+                                { label: 'Submit Kaizen idea', pts: '+50' },
+                                { label: 'Idea approved',      pts: '+100' },
+                                { label: 'Idea implemented',   pts: '+200' },
+                                { label: 'Send kudos',         pts: '+10' },
+                                { label: 'Receive kudos',      pts: '+15' },
+                                { label: 'Daily login',        pts: '+5' },
+                            ].map(({ label, pts }) => (
+                                <div key={label} className="flex items-center justify-between p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                                    <span className="text-slate-600 dark:text-slate-300">{label}</span>
+                                    <span className="font-semibold text-emerald-600">{pts}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Featured Banner */}
+            {featuredRewards.length > 0 && (
+                <div className="glass-card p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Featured</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {featuredRewards.map((reward) => {
+                            const canAfford = user.points >= reward.cost;
+                            return (
+                                <div
+                                    key={reward.id}
+                                    className="relative glass-card overflow-hidden group hover:scale-[1.02] transition-transform border-2 border-amber-300 dark:border-amber-600"
+                                >
+                                    {/* Featured Badge */}
+                                    <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
+                                        <Star className="w-3 h-3 fill-white" />
+                                        Featured
+                                    </div>
+
+                                    {/* Promo Text */}
+                                    {reward.promoText && (
+                                        <div className="absolute top-2 right-2 z-10 px-2 py-1 bg-rose-500 text-white text-xs font-bold rounded-full max-w-[140px] truncate">
+                                            {reward.promoText}
+                                        </div>
+                                    )}
+
+                                    {/* Image */}
+                                    <div className="aspect-video overflow-hidden">
+                                        <img
+                                            src={reward.image}
+                                            alt={reward.name}
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        />
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-slate-800 dark:text-white mb-1">
+                                            {reward.name}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">
+                                            {reward.description}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                {reward.cost.toLocaleString()} pts
+                                            </span>
+                                            <button
+                                                onClick={() => handleRedeemClick(reward)}
+                                                disabled={!canAfford}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${canAfford
+                                                    ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                                    }`}
+                                            >
+                                                Redeem
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Reward Catalog */}
             <div className="glass-card p-6">
@@ -125,62 +203,91 @@ export default function Rewards() {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {rewardsList.map((reward) => {
-                        const canAfford = user.points >= reward.cost;
-                        const isLowStock = reward.stock < 10;
+                {/* Category Filter Tabs */}
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3 mb-4">
+                    {CATEGORIES.map(({ key, label, emoji }) => (
+                        <button
+                            key={key}
+                            onClick={() => setActiveCategory(key)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === key
+                                ? 'bg-indigo-500 text-white shadow-sm'
+                                : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white/80'
+                                }`}
+                        >
+                            <span>{emoji}</span>
+                            {label}
+                        </button>
+                    ))}
+                </div>
 
-                        return (
-                            <div
-                                key={reward.id}
-                                className="glass-card overflow-hidden group hover:scale-[1.02] transition-transform"
-                            >
-                                {/* Image */}
-                                <div className="relative aspect-video overflow-hidden">
-                                    <img
-                                        src={reward.image}
-                                        alt={reward.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                    />
-                                    {isLowStock && (
-                                        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
-                                            <AlertTriangle className="w-3 h-3" />
-                                            Low Stock
-                                        </div>
-                                    )}
-                                    <span className={`absolute bottom-2 left-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(reward.type)}`}>
-                                        {reward.type}
-                                    </span>
-                                </div>
+                {filteredRewards.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                        <Zap className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                        No rewards in this category yet.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {filteredRewards.map((reward) => {
+                            const canAfford = user.points >= reward.cost;
+                            const isLowStock = reward.stock < 10;
 
-                                {/* Info */}
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-slate-800 dark:text-white mb-1 line-clamp-1">
-                                        {reward.name}
-                                    </h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">
-                                        {reward.description}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                                            {reward.cost.toLocaleString()} pts
+                            return (
+                                <div
+                                    key={reward.id}
+                                    className="glass-card overflow-hidden group hover:scale-[1.02] transition-transform"
+                                >
+                                    {/* Image */}
+                                    <div className="relative aspect-video overflow-hidden">
+                                        <img
+                                            src={reward.image}
+                                            alt={reward.name}
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        />
+                                        {isLowStock && (
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Low Stock
+                                            </div>
+                                        )}
+                                        {reward.promoText && (
+                                            <div className="absolute bottom-2 left-2 right-2 px-2 py-1 bg-black/60 text-white text-xs font-medium rounded-lg truncate">
+                                                {reward.promoText}
+                                            </div>
+                                        )}
+                                        <span className={`absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(reward.type)}`}>
+                                            {reward.type}
                                         </span>
-                                        <button
-                                            onClick={() => handleRedeemClick(reward)}
-                                            disabled={!canAfford}
-                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${canAfford
-                                                ? 'bg-indigo-500 text-white hover:bg-indigo-600'
-                                                : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                                                }`}
-                                        >
-                                            Redeem
-                                        </button>
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-slate-800 dark:text-white mb-1 line-clamp-1">
+                                            {reward.name}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">
+                                            {reward.description}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                {reward.cost.toLocaleString()} pts
+                                            </span>
+                                            <button
+                                                onClick={() => handleRedeemClick(reward)}
+                                                disabled={!canAfford}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${canAfford
+                                                    ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                                    }`}
+                                            >
+                                                Redeem
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Transaction History */}
@@ -201,7 +308,7 @@ export default function Rewards() {
                                 className="flex items-center gap-3 p-3 bg-white/50 dark:bg-slate-800/50 rounded-xl"
                             >
                                 <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'earn'
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'earn'
                                         ? 'bg-emerald-100 dark:bg-emerald-900/30'
                                         : 'bg-slate-100 dark:bg-slate-800'
                                         }`}
@@ -221,7 +328,7 @@ export default function Rewards() {
                                     </div>
                                 </div>
                                 <div
-                                    className={`font-bold ${tx.type === 'earn' ? 'text-emerald-600' : 'text-slate-500'
+                                    className={`font-bold shrink-0 ${tx.type === 'earn' ? 'text-emerald-600' : 'text-slate-500'
                                         }`}
                                 >
                                     {tx.type === 'earn' ? '+' : ''}{tx.amount.toLocaleString()}
