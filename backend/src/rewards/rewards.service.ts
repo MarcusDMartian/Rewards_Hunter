@@ -50,7 +50,7 @@ export class RewardsService {
   }
 
   // Redeem a reward
-  async redeem(userId: string, rewardId: string) {
+  async redeem(userId: string, rewardId: string, deliveryMethod: 'email' | 'physical' = 'email', note?: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -94,6 +94,8 @@ export class RewardsService {
           rewardId,
           rewardName: reward.name,
           pointsCost: reward.cost,
+          deliveryMethod,
+          note,
         },
       });
 

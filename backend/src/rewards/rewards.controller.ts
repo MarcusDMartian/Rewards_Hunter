@@ -35,8 +35,12 @@ export class RewardsController {
   }
 
   @Post('rewards/:id/redeem')
-  async redeem(@Param('id') id: string, @CurrentUser() user: ReqUser) {
-    return this.rewardsService.redeem(user.id, id);
+  async redeem(
+    @Param('id') id: string,
+    @CurrentUser() user: ReqUser,
+    @Body() body?: { deliveryMethod?: 'email' | 'physical'; note?: string },
+  ) {
+    return this.rewardsService.redeem(user.id, id, body?.deliveryMethod ?? 'email', body?.note);
   }
 
   @Get('redemptions')
