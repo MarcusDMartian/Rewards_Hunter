@@ -17,11 +17,20 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { ReqUser } from '../common/interfaces/req-user.interface';
+import { AiPolishService } from '../common/services/ai-polish.service';
 
 @Controller('ideas')
 @UseGuards(JwtAuthGuard)
 export class IdeasController {
-  constructor(private ideasService: IdeasService) {}
+  constructor(
+    private ideasService: IdeasService,
+    private aiPolish: AiPolishService,
+  ) {}
+
+  @Post('polish')
+  async polish(@Body() body: { text: string; mode?: 'idea' | 'kudos' }) {
+    return this.aiPolish.polish(body.text, body.mode ?? 'idea');
+  }
 
   @Get()
   async findAll(

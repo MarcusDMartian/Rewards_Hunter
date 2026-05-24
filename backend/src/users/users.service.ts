@@ -57,22 +57,123 @@ export class UsersService {
     });
   }
 
-  async getLeaderboard(period: string, teamId?: string) {
-    const where: any = { role: { not: 'SystemAdmin' } };
-    if (teamId) where.teamId = teamId;
+  async getLeaderboard(period: string, teamId?: string, orgId?: string) {
+    const where: any = { role: { not: 'SystemAdmin' }, isActive: true };
+    if (teamId && teamId !== 'all') where.teamId = teamId;
+    if (orgId) where.orgId = orgId;
 
     const orderBy: any = {};
-    if (period === 'monthly') orderBy.monthlyPoints = 'desc';
-    else if (period === 'quarterly') orderBy.quarterlyPoints = 'desc';
-    else orderBy.points = 'desc';
+    if (period === 'week') orderBy.weeklyPoints = 'desc';
+    else if (period === 'month') orderBy.monthlyPoints = 'desc';
+    else if (period === 'quarter') orderBy.quarterlyPoints = 'desc';
+    else orderBy.points = 'desc'; // 'all'
 
     const users = await this.prisma.user.findMany({
       where,
-      include: { team: true, userBadges: { include: { badge: true } } },
+      include: {
+        team: true,
+        userBadges: { include: { badge: true } },
+        kaizenIdeas: { select: { id: true } },
+        kudosReceived: { select: { id: true } },
+      },
       orderBy,
     });
 
-    return users.map(this.formatUser);
+    // Get last week's rank snapshots for trend calculation
+    const lastWeekStart = (() => {
+      const now = new Date();
+      const day = now.getDay();
+      const diffToMon = day === 0 ? -6 : 1 - day;
+      const mon = new Date(now);
+      mon.setDate(now.getDate() + diffToMon - 7); // previous Monday
+      return mon.toISOString().split('T')[0];
+    })();
+
+    const snapshots = await this.prisma.rankSnapshot.findMany({
+      where: { weekStart: lastWeekStart, ...(orgId ? { orgId } : {}) },
+      select: { userId: true, rank: true },
+    });
+    const prevRankMap = new Map(snapshots.map((s) => [s.userId, s.rank]));
+
+    return users.map((user, index) => {
+      const currentRank = index + 1;
+      const prevRank = prevRankMap.get(user.id);
+      let trend: 'up' | 'down' | 'same' | 'new' = 'new';
+      if (prevRank !== undefined) {
+        if (currentRank < prevRank) trend = 'up';
+        else if (currentRank > prevRank) trend = 'down';
+        else trend = 'same';
+      }
+
+      return {
+        ...this.formatUserForLeaderboard(user),
+        rank: currentRank,
+        trend,
+        ideasCount: user.kaizenIdeas.length,
+        kudosCount: user.kudosReceived.length,
+        badgesCount: user.userBadges.length,
+        periodPoints:
+          period === 'week' ? user.weeklyPoints
+          : period === 'month' ? user.monthlyPoints
+          : period === 'quarter' ? user.quarterlyPoints
+          : user.points,
+      };
+    });
+  }
+
+  async getBurnoutRisks(orgId: string) {
+    // Burnout: activity this week < 50% of avg activity over previous 4 weeks
+    // Activity = weeklyPoints earned (using RankSnapshot as a proxy)
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMon = day === 0 ? -6 : 1 - day;
+    const currentMonday = new Date(now);
+    currentMonday.setDate(now.getDate() + diffToMon);
+    currentMonday.setHours(0, 0, 0, 0);
+
+    const users = await this.prisma.user.findMany({
+      where: { orgId, isActive: true, role: { not: 'SystemAdmin' } },
+      select: { id: true, name: true, avatar: true, weeklyPoints: true, teamId: true, team: true },
+    });
+
+    const flags: { userId: string; name: string; avatar: string; team: string; currentWeekPts: number; avgPts: number; dropPercent: number }[] = [];
+
+    for (const user of users) {
+      // Current week points
+      const currentWeekPts = user.weeklyPoints;
+
+      // Avg of previous 4 weeks via RankSnapshot
+      const prevWeeks: string[] = [];
+      for (let i = 1; i <= 4; i++) {
+        const d = new Date(currentMonday);
+        d.setDate(currentMonday.getDate() - i * 7);
+        prevWeeks.push(d.toISOString().split('T')[0]);
+      }
+      const snapshots = await this.prisma.rankSnapshot.findMany({
+        where: { userId: user.id, weekStart: { in: prevWeeks } },
+        select: { points: true },
+      });
+
+      if (snapshots.length < 2) continue; // not enough data
+
+      const avgPts = snapshots.reduce((s, r) => s + r.points, 0) / snapshots.length;
+      if (avgPts === 0) continue;
+
+      const dropPercent = Math.round(((avgPts - currentWeekPts) / avgPts) * 100);
+      if (dropPercent >= 50) {
+        flags.push({
+          userId: user.id,
+          name: user.name,
+          avatar: user.avatar,
+          team: (user.team as any)?.name ?? 'General',
+          currentWeekPts,
+          avgPts: Math.round(avgPts),
+          dropPercent,
+        });
+      }
+    }
+
+    return flags.sort((a, b) => b.dropPercent - a.dropPercent);
   }
 
   async getPlatformStats() {
@@ -104,6 +205,27 @@ export class UsersService {
   private formatUser(user: any) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...safeUser } = user;
+    const badges =
+      user.userBadges?.map((ub: any) => ({
+        id: ub.badge.id,
+        name: ub.badge.name,
+        icon: ub.badge.icon,
+        color: ub.badge.color,
+        description: ub.badge.description,
+        unlocked: true,
+      })) || [];
+
+    return {
+      ...safeUser,
+      badges,
+      team: user.team?.name || 'General',
+      teamId: user.teamId || '',
+    };
+  }
+
+  private formatUserForLeaderboard(user: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, kaizenIdeas, kudosReceived, ...safeUser } = user;
     const badges =
       user.userBadges?.map((ub: any) => ({
         id: ub.badge.id,

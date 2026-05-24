@@ -3,7 +3,7 @@
 // ============================================
 
 import api from './apiClient';
-import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest, Reward, Badge } from '../types';
+import { User, KaizenIdea, Kudos, Mission, PointTransaction, RedemptionRequest, Reward, Badge, ActivityItem, LeaderboardRow, KudosQuota, PointRule } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // ============================================
@@ -25,12 +25,11 @@ export function saveCurrentUser(user: User): void {
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
 }
 
-export async function getLeaderboard(period: string = 'all', teamId?: string): Promise<User[]> {
+export async function getLeaderboard(period: string = 'all', teamId?: string): Promise<LeaderboardRow[]> {
     try {
         const params = new URLSearchParams();
-        if (period) params.append('period', period);
+        params.append('period', period);
         if (teamId && teamId !== 'all') params.append('teamId', teamId);
-
         const { data } = await api.get(`/leaderboard?${params.toString()}`);
         return data;
     } catch {
@@ -146,6 +145,33 @@ export async function toggleKudosLike(kudosId: string, _userId: string): Promise
     return data;
 }
 
+export async function getKudosQuota(): Promise<KudosQuota> {
+    try {
+        const { data } = await api.get('/kudos/quota');
+        return data;
+    } catch {
+        return { used: 0, limit: 7, remaining: 7 };
+    }
+}
+
+export async function getKudosValuesDistribution(): Promise<{ value: string; count: number }[]> {
+    try {
+        const { data } = await api.get('/kudos/values-distribution');
+        return data;
+    } catch {
+        return [];
+    }
+}
+
+export async function getKudosTopRecipients(period: 'week' | 'month' = 'week') {
+    try {
+        const { data } = await api.get(`/kudos/top-recipients?period=${period}`);
+        return data;
+    } catch {
+        return [];
+    }
+}
+
 // ============================================
 // MISSIONS
 // ============================================
@@ -202,8 +228,8 @@ export async function getRedemptions(): Promise<RedemptionRequest[]> {
     }
 }
 
-export async function addRedemption(rewardId: string): Promise<RedemptionRequest> {
-    const { data } = await api.post(`/rewards/${rewardId}/redeem`);
+export async function addRedemption(rewardId: string, deliveryMethod: 'email' | 'physical' = 'email', note?: string): Promise<RedemptionRequest> {
+    const { data } = await api.post(`/rewards/${rewardId}/redeem`, { deliveryMethod, note });
     return data;
 }
 
@@ -246,6 +272,47 @@ export async function getBadges(): Promise<any[]> {
 export async function addBadge(badge: Partial<Badge>): Promise<Badge> {
     const { data } = await api.post('/admin/badges', badge);
     return data;
+}
+
+// ============================================
+// ACTIVITY FEED
+// ============================================
+export async function getActivityFeed(scope: 'team' | 'org' = 'org', limit = 20): Promise<ActivityItem[]> {
+    try {
+        const { data } = await api.get(`/activities?scope=${scope}&limit=${limit}`);
+        return data;
+    } catch {
+        return [];
+    }
+}
+
+// ============================================
+// POINT RULES (admin)
+// ============================================
+export async function getPointRules(): Promise<PointRule[]> {
+    try {
+        const { data } = await api.get('/admin/point-rules');
+        return data;
+    } catch {
+        return [];
+    }
+}
+
+export async function updatePointRule(id: string, updates: Partial<PointRule>): Promise<PointRule> {
+    const { data } = await api.patch(`/admin/point-rules/${id}`, updates);
+    return data;
+}
+
+// ============================================
+// AI POLISH
+// ============================================
+export async function aiPolishText(text: string, mode: 'idea' | 'kudos' = 'idea'): Promise<{ enabled: boolean; polished: string | null }> {
+    try {
+        const { data } = await api.post('/ideas/polish', { text, mode });
+        return data;
+    } catch {
+        return { enabled: false, polished: null };
+    }
 }
 
 // ============================================

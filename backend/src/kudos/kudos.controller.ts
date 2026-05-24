@@ -26,15 +26,27 @@ export class KudosController {
     return this.kudosService.findAll(teamId);
   }
 
+  @Get('quota')
+  async getQuota(@CurrentUser() user: ReqUser) {
+    return this.kudosService.getWeeklyQuota(user.id);
+  }
+
+  @Get('values-distribution')
+  async getValuesDistribution(@CurrentUser() user: ReqUser) {
+    return this.kudosService.getValuesDistribution(user.orgId);
+  }
+
+  @Get('top-recipients')
+  async getTopRecipients(@Query('period') period?: 'week' | 'month') {
+    return this.kudosService.getTopRecipients(period ?? 'week');
+  }
+
   @Post()
   async create(
     @CurrentUser() user: ReqUser,
     @Body() body: { receiverId: string; coreValue: string; message: string },
   ) {
-    return this.kudosService.create({
-      senderId: user.id,
-      ...body,
-    });
+    return this.kudosService.create({ senderId: user.id, ...body });
   }
 
   @Post(':id/like')

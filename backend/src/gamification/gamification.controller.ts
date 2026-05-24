@@ -23,16 +23,14 @@ import type { ReqUser } from '../common/interfaces/req-user.interface';
 export class GamificationController {
   constructor(private gamificationService: GamificationService) {}
 
+  // ── Employee events & missions ─────────────────────────────────────────────
+
   @Post('events')
   async processEvent(
     @CurrentUser() user: ReqUser,
     @Body() body: { eventType: string; referenceId?: string },
   ) {
-    return this.gamificationService.processEvent(
-      user.id,
-      body.eventType,
-      body.referenceId,
-    );
+    return this.gamificationService.processEvent(user.id, body.eventType, body.referenceId);
   }
 
   @Get('missions/today')
@@ -55,7 +53,7 @@ export class GamificationController {
   @Post('admin/badges')
   @UseGuards(RolesGuard)
   @Roles('Superadmin', 'Admin', 'SystemAdmin')
-  async createBadge(@Body() body: { name: string; icon?: string; color?: string; description?: string; criteriaJson?: string }) {
+  async createBadge(@Body() body: { name: string; icon?: string; color?: string; description?: string; criteriaJson?: string; rarity?: string }) {
     return this.gamificationService.createBadge(body);
   }
 
@@ -94,5 +92,24 @@ export class GamificationController {
   @Roles('Superadmin', 'Admin', 'SystemAdmin')
   async deleteMission(@Param('id') id: string) {
     return this.gamificationService.deleteMission(id);
+  }
+
+  // ── Admin: Point Rules CRUD ────────────────────────────────────────────────
+
+  @Get('admin/point-rules')
+  @UseGuards(RolesGuard)
+  @Roles('Superadmin', 'Admin', 'SystemAdmin')
+  async getPointRules() {
+    return this.gamificationService.getAllPointRules();
+  }
+
+  @Patch('admin/point-rules/:id')
+  @UseGuards(RolesGuard)
+  @Roles('Superadmin', 'Admin', 'SystemAdmin')
+  async updatePointRule(
+    @Param('id') id: string,
+    @Body() body: Partial<{ points: number; dailyLimit: number; enabled: boolean; label: string }>,
+  ) {
+    return this.gamificationService.updatePointRule(id, body);
   }
 }

@@ -53,6 +53,7 @@ model User {
   points          Int     @default(0)
   monthlyPoints   Int     @default(0)
   quarterlyPoints Int     @default(0)
+  weeklyPoints    Int     @default(0)
   level           Int     @default(1)
   nextLevelPoints Int     @default(100)
   streak          Int     @default(0)
@@ -192,8 +193,11 @@ model Reward {
   image       String   @default("")
   cost        Int
   type        String
+  category    String   @default("Merch") // Food|Time|Merch|Tech|Learn
   stock       Int      @default(0)
   isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  promoText   String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -214,16 +218,17 @@ model PointTransaction {
 }
 
 model RedemptionRequest {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String    @db.ObjectId
-  rewardId    String    @db.ObjectId
-  rewardName  String
-  pointsCost  Int
-  status      String    @default("Pending")
-  note        String?
-  processedBy String?
-  requestedAt DateTime  @default(now())
-  processedAt DateTime?
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @db.ObjectId
+  rewardId       String    @db.ObjectId
+  rewardName     String
+  pointsCost     Int
+  status         String    @default("Pending")
+  note           String?
+  deliveryMethod String    @default("email") // email|physical
+  processedBy    String?
+  requestedAt    DateTime  @default(now())
+  processedAt    DateTime?
 
   user   User   @relation(fields: [userId], references: [id])
   reward Reward @relation(fields: [rewardId], references: [id])
@@ -240,6 +245,7 @@ model Badge {
   color        String @default("bg-indigo-100")
   description  String @default("")
   criteriaJson String @default("{}")
+  rarity       String @default("Common") // Common|Uncommon|Rare|Epic|Legendary
 
   userBadges UserBadge[]
 }
@@ -287,6 +293,54 @@ model UserMission {
   mission Mission @relation(fields: [missionId], references: [id])
 
   @@unique([userId, missionId, periodStart])
+}
+
+// ============================================
+// ADMIN CONFIGURABLE POINTS RULES
+// ============================================
+
+model PointRule {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  eventType  String  @unique // idea_created|idea_approved|idea_implemented|kudos_sent|kudos_received|daily_login|mission_completed
+  points     Int     @default(0)
+  dailyLimit Int     @default(0) // 0 = unlimited
+  enabled    Boolean @default(true)
+  label      String  @default("") // human-readable label for admin UI
+}
+
+// ============================================
+// LEADERBOARD RANK SNAPSHOTS (for trend ↑↓)
+// ============================================
+
+model RankSnapshot {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  orgId     String   @db.ObjectId
+  rank      Int
+  points    Int
+  weekStart String   // ISO date "YYYY-MM-DD" (Monday)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([orgId, weekStart])
+}
+
+// ============================================
+// CORE VALUES (org-level, admin configurable)
+// ============================================
+
+model CoreValue {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  orgId       String @db.ObjectId
+  key         String // camelCase identifier: ownership|customerFirst|kaizen|teamUp|integrity|biasForSpeed
+  label       String // display name
+  color       String @default("#0070CE")
+  icon        String @default("⭐")
+  description String @default("")
+  isActive    Boolean @default(true)
+  order       Int     @default(0)
+
+  @@unique([orgId, key])
 }
 
 // ============================================
